@@ -1,6 +1,6 @@
 import CroppedImage from './CroppedImage'
-// helle Töne aus Weinrot, Petrol und den Schulfarben der AHF-Schulen
-export const PASTELS = ['#dfbfc3', '#b5d0cb', '#f4d3a8', '#b9d6ea', '#e6e9a6', '#d5c3d6', '#c9ddb4', '#e8dccf']
+// helle Diagrammfarben des aktiven Stils (siehe src/themes.js)
+export const PASTELS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)', 'var(--c7)', 'var(--c8)']
 export const pastel = (i) => PASTELS[i % PASTELS.length]
 
 const fmt = (n, d = 1) => n.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d })
@@ -75,8 +75,8 @@ function RankingResults({ q, answers }) {
   )
 }
 
-// kräftige Schulfarben für Linie und Punkt; die Fläche nutzt dieselbe Farbe transparent
-const STRONG = ['#942838', '#11443e', '#b35c1e', '#2f6f99', '#6b7a10', '#7a4d7a', '#4f6d2f', '#8a6a3d']
+// kräftige Farben des aktiven Stils für Linie und Punkt; die Fläche nutzt dieselbe Farbe transparent
+const STRONG = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)', 'var(--s5)', 'var(--s6)', 'var(--s7)', 'var(--s8)']
 
 // Geglättete Verteilung (Kerndichteschätzung) als SVG-Pfad im Bereich 0..1000 × 0..100
 function densityPath(vals, min, max) {
@@ -113,7 +113,7 @@ function ScaleResults({ q, answers }) {
             </div>
             <div className="scale-line">
               <div className="scale-fill" style={{ width: `${pos}%`, background: color }} />
-              <div className="scale-dot" style={{ left: `${pos}%`, background: color }} title={`${vals.length} Antworten`}>{fmt(avg)}</div>
+              <div className="scale-dot" style={{ left: `${pos}%`, background: color, color: `var(--s${(i % 8) + 1}-ink, #fff)` }} title={`${vals.length} Antworten`}>{fmt(avg)}</div>
             </div>
           </div>
         )
@@ -139,7 +139,7 @@ function OpenResults({ q, answers }) {
     return (
       <div className="cloud">
         {words.map((w, i) => (
-          <span key={w.text} style={{ fontSize: `${1.2 + (w.n / top) * 3.4}rem`, color: ['#942838', '#11443e', '#b35c1e', '#2f6f99', '#6b7a10'][i % 5] }}>{w.text}</span>
+          <span key={w.text} style={{ fontSize: `${1.2 + (w.n / top) * 3.4}rem`, color: STRONG[i % 5] }}>{w.text}</span>
         ))}
       </div>
     )

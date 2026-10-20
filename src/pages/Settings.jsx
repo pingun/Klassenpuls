@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase, errorText } from '../supabase'
 import { notifyLogoChanged } from '../components/CornerLogo'
+import ThemePreview from '../components/ThemePreview'
+import { THEMES, DEFAULT_THEME } from '../themes'
 
 // Persönliche Einstellungen: eigenes Logo wählen und Passwort ändern
 export default function Settings({ auth }) {
@@ -63,6 +65,8 @@ export default function Settings({ auth }) {
         {logos?.length === 0 && <p className="muted small" style={{ margin: 0 }}>Es wurden noch keine Logos hochgeladen. Das kann ein Admin unter „Verwaltung“ erledigen.</p>}
       </div>
 
+      <ThemeCard auth={auth} />
+
       <PasswordCard />
     </div>
   )
@@ -95,5 +99,36 @@ function PasswordCard() {
       {msg && <div className={`alert ${msg.ok ? 'ok' : ''}`}>{msg.text}</div>}
       <button className="btn" style={{ width: 'fit-content' }} disabled={!pw}>Passwort speichern</button>
     </form>
+  )
+}
+
+function ThemeCard({ auth }) {
+  const current = auth.profile?.theme || DEFAULT_THEME
+  const [msg, setMsg] = useState(null)
+  async function choose(key) {
+    setMsg(null)
+    const { error } = await supabase.rpc('set_my_theme', { p_theme: key })
+    if (error) return setMsg({ ok: false, text: errorText(error) })
+    await auth.refreshProfile()
+    setMsg({ ok: true, text: 'Stil gespeichert ✓' })
+  }
+  return (
+    <div className="card stack">
+      <h3 style={{ margin: 0 }}>Mein Stil</h3>
+      <p className="muted small" style={{ margin: 0 }}>
+        Der Stil gilt für deine Seiten, den Beamer und die Handys deiner Schüler. Im Editor kannst du
+        für einzelne Umfragen einen anderen Stil wählen.
+      </p>
+      {msg && <div className={`alert ${msg.ok ? 'ok' : ''}`}>{msg.text}</div>}
+      <div className="theme-grid">
+        {THEMES.map((t) => (
+          <button key={t.key} className={`theme-tile ${current === t.key ? 'on' : ''}`} onClick={() => choose(t.key)}>
+            <ThemePreview themeKey={t.key} />
+            <b className="small">{t.name}{current === t.key ? ' ✓' : ''}</b>
+            <span className="muted small">{t.desc}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }

@@ -1,3 +1,4 @@
+import { useTheme } from '../themes'
 import { useEffect, useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
 import { supabase, errorText, appBaseUrl, authProviders, signInWithMicrosoft, OAUTH_ERROR } from '../supabase'
@@ -5,6 +6,7 @@ import Logo from '../components/Logo'
 import CornerLogo, { useLogoUrl } from '../components/CornerLogo'
 
 export default function Login({ auth }) {
+  useTheme(null)
   const logoUrl = useLogoUrl(null)
   const [mode, setMode] = useState('login')
   const [name, setName] = useState('')

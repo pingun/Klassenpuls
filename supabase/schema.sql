@@ -472,3 +472,17 @@ begin
 end $$;
 revoke all on function public.reopen_session(uuid) from public, anon;
 grant execute on function public.reopen_session(uuid) to authenticated;
+
+-- ============ Stile (Standard pro Lehrkraft, abweichend pro Umfrage) ============
+-- Die Farbpaletten selbst stehen in src/themes.js.
+alter table public.profiles add column theme text check (theme is null or theme ~ '^[a-z]{2,20}$');
+alter table public.polls add column theme text check (theme is null or theme ~ '^[a-z]{2,20}$');
+
+create or replace function public.set_my_theme(p_theme text) returns void
+language sql volatile security definer set search_path = '' as $$
+  update public.profiles set theme = nullif(p_theme, '') where id = auth.uid();
+$$;
+revoke all on function public.set_my_theme(text) from public, anon;
+grant execute on function public.set_my_theme(text) to authenticated;
+-- get_live_state liefert zusätzlich 'theme' = coalesce(polls.theme, profiles.theme der Lehrkraft)
+-- (vollständige Fassung: Migration "pollbox_themes")

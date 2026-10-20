@@ -197,7 +197,7 @@ function CredentialsCard({ c, onClose }) {
   const teams = `https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(c.email)}&message=${encodeURIComponent(text)}`
 
   return (
-    <div className="card stack" style={{ border: '2px solid var(--accent)', background: '#fbfdfc' }}>
+    <div className="card stack" style={{ border: '2px solid var(--accent)', background: 'var(--card)' }}>
       <div className="row spread">
         <h3 style={{ margin: 0 }}>✓ {c.isNew ? 'Lehrer angelegt' : 'Passwort zurückgesetzt'}: {c.full_name}</h3>
         <button className="btn ghost small" onClick={onClose}>Schließen</button>

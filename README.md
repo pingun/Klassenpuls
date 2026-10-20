@@ -45,6 +45,14 @@ Lehrer, die ein Admin von Hand angelegt hat.
 
 Wer sich per Microsoft anmeldet, muss kein vorläufiges Passwort mehr ändern.
 
+## Stile
+
+Es gibt 8 Stile (Schul-Klassik, Nordisch, Waldgrün, Graphit dunkel, Akademie-Blau, Terrakotta,
+Pflaume und Salbei, Hoher Kontrast). Jeder Lehrer wählt unter **Einstellungen** seinen Standardstil;
+im Editor kann jede Umfrage einen eigenen Stil bekommen. Lehrerseiten nutzen den Standardstil,
+Beamer und Schülerhandys den Stil der Umfrage (sonst den Standardstil des Lehrers).
+Die Paletten stehen zentral in `src/themes.js`.
+
 ## Rollen & Lehrer verwalten
 
 - Die **erste** registrierte Person wird automatisch Admin.
