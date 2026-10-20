@@ -84,8 +84,8 @@ export default function LogoAdmin() {
         </label>
       </div>
       <p className="muted small" style={{ margin: 0 }}>
-        Das Logo erscheint unten links auf allen Seiten. Das <b>Standardlogo</b> gilt für alle; Lehrer können unter
-        „Einstellungen“ ein anderes Logo aus dieser Liste wählen. Ideal: PNG mit transparentem Hintergrund.
+        Das Logo erscheint mittig unten auf allen Seiten. Das <b>Standardlogo</b> gilt für alle; Lehrer können unter
+        „Einstellungen“ ein anderes Logo aus dieser Liste wählen oder das Logo ausblenden. Ideal: PNG mit transparentem Hintergrund.
       </p>
       {err && <div className="alert">{err}</div>}
       {!logos.length && <p className="muted" style={{ margin: 0 }}>Noch keine Logos hochgeladen.</p>}

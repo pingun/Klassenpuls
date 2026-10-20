@@ -19,7 +19,7 @@ import Settings from './pages/Settings'
 
 function TeacherShell({ auth, children, admin = false }) {
   const loc = useLocation()
-  const logoUrl = useLogoUrl(auth.session?.user.id, auth.profile?.logo_id)
+  const logoUrl = useLogoUrl(auth.session?.user.id, `${auth.profile?.logo_id}|${auth.profile?.hide_logo}`)
   if (auth.loading) return <div className="container muted">Lade …</div>
   if (!auth.session) return <Navigate to="/login" replace state={{ from: loc.pathname }} />
   if (auth.profile?.must_change_password) return <ForcePassword auth={auth} />

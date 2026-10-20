@@ -7,7 +7,8 @@ export default function Settings({ auth }) {
   const [logos, setLogos] = useState(null)
   const [defaultId, setDefaultId] = useState(null)
   const [msg, setMsg] = useState(null)
-  const current = auth.profile?.logo_id || null
+  const hidden = !!auth.profile?.hide_logo
+  const current = hidden ? 'none' : auth.profile?.logo_id || null
 
   useEffect(() => {
     Promise.all([
@@ -18,7 +19,7 @@ export default function Settings({ auth }) {
 
   async function choose(id) {
     setMsg(null)
-    const { error } = await supabase.rpc('set_my_logo', { p_logo: id })
+    const { error } = await supabase.rpc('set_my_logo', id === 'none' ? { p_logo: null, p_hide: true } : { p_logo: id, p_hide: false })
     if (error) return setMsg({ ok: false, text: errorText(error) })
     await auth.refreshProfile()
     notifyLogoChanged()
@@ -34,8 +35,8 @@ export default function Settings({ auth }) {
       <div className="card stack">
         <h3 style={{ margin: 0 }}>Mein Logo</h3>
         <p className="muted small" style={{ margin: 0 }}>
-          Das Logo erscheint unten links auf deinen Seiten, am Beamer und auf den Handys deiner Schüler.
-          Ohne eigene Auswahl wird das Standardlogo der Schule verwendet.
+          Das Logo erscheint mittig unten auf deinen Seiten, am Beamer und auf den Handys deiner Schüler.
+          Ohne eigene Auswahl wird das Standardlogo der Schule verwendet – du kannst das Logo auch ganz ausblenden.
         </p>
         {msg && <div className={`alert ${msg.ok ? 'ok' : ''}`}>{msg.text}</div>}
         {logos === null ? <p className="muted">Lade …</p> : (
@@ -44,6 +45,11 @@ export default function Settings({ auth }) {
               <div className="logo-box">{defaultLogo ? <img src={defaultLogo.url} alt="" /> : <span className="muted small">kein Logo</span>}</div>
               <b className="small">Standard verwenden</b>
               <span className="muted small">{defaultLogo ? defaultLogo.title : 'Es ist kein Standardlogo gesetzt.'}</span>
+            </button>
+            <button className={`logo-tile ${current === 'none' ? 'on' : ''}`} onClick={() => choose('none')}>
+              <div className="logo-box"><span className="muted" style={{ fontSize: '1.6rem' }}>∅</span></div>
+              <b className="small">Kein Logo</b>
+              <span className="muted small">Auf deinen Seiten, am Beamer und bei deinen Schülern erscheint kein Logo.</span>
             </button>
             {logos.map((l) => (
               <button key={l.id} className={`logo-tile ${current === l.id ? 'on' : ''}`} onClick={() => choose(l.id)}>

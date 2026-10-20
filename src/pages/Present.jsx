@@ -139,14 +139,13 @@ export default function Present() {
       </div>
 
       <div className="present-foot">
-        <CornerLogo url={logoUrl} inline />
         <Link to="/dashboard" className="btn ghost small">← Übersicht</Link>
         {live && <span className="counter" title="Geräte, die gerade verbunden sind">👥 {online} online</span>}
         <span className="counter" title="Antworten auf diese Frage">✔ {answers.length} Antworten</span>
         <span className="muted small" title={names.length ? `Mit Namen: ${names.join(', ')}` : 'Alle anonym'}>
           {participants} Teilnehmer insgesamt{names.length ? ` · ${names.length} mit Namen` : ''}
         </span>
-        <div className="grow" />
+        <div className="foot-center"><CornerLogo url={logoUrl} inline /></div>
         {err && <span className="alert small">{err}</span>}
         <button className="btn ghost" onClick={() => go(-1)} disabled={idx === 0} title="Vorherige Frage (←)">←</button>
         <span className="counter">{questions.length ? idx + 1 : 0} / {questions.length}</span>

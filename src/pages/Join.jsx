@@ -66,7 +66,7 @@ export default function Join() {
   const prev = q && answered[q.id]
 
   return (
-    <Shell title={state.title} logo={state.logo_url}>
+    <Shell title={state.title} logo={state.logo_url ?? null}>
       {!q ? (
         <div className="waiting"><div className="bounce">⏳</div><p className="muted">Gleich geht’s los …</p></div>
       ) : prev && !editing ? (
@@ -91,7 +91,7 @@ function Shell({ title, logo, children }) {
       <div className="row" style={{ marginBottom: 12 }}><Logo /><b className="grow">{title || 'Klassenpuls'}</b></div>
       {title && <NameBar />}
       {children}
-      <CornerLogo url={logo || fallback} />
+      <CornerLogo url={logo !== undefined ? logo : fallback} />
     </div>
   )
 }
