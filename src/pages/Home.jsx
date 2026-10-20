@@ -16,7 +16,7 @@ export default function Home({ auth }) {
       </div>
       <form className="card stack" onSubmit={(e) => { e.preventDefault(); if (clean.length === 6) nav(`/j/${clean}`) }}>
         <input
-          className="code-input" inputMode="numeric" autoComplete="off" placeholder="123 456"
+          type="text" className="code-input" inputMode="numeric" autoComplete="off" placeholder="123 456"
           value={clean} onChange={(e) => setCode(e.target.value)} aria-label="Umfrage-Code"
         />
         <button className="btn big mint" style={{ width: '100%', justifyContent: 'center' }} disabled={clean.length !== 6}>Los geht’s</button>
