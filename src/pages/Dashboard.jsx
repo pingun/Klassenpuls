@@ -61,6 +61,12 @@ export default function Dashboard({ auth }) {
     if (error) setErr(errorText(error)); else load()
   }
 
+  async function reopenSession(s) {
+    const { error } = await supabase.rpc('reopen_session', { p_session: s.id })
+    if (error) return setErr(errorText(error))
+    nav(`/present/${s.id}`)
+  }
+
   async function removeSession(s) {
     if (!confirm('Diesen Durchlauf und seine Ergebnisse löschen?')) return
     const { error } = await supabase.from('sessions').delete().eq('id', s.id)
@@ -112,6 +118,7 @@ export default function Dashboard({ auth }) {
                     <td>{s.status === 'live' ? <span className="pill live">live · {s.code}</span> : <span className="pill ended">beendet</span>}</td>
                     <td className="row" style={{ justifyContent: 'flex-end' }}>
                       <Link className="btn small sky" to={`/present/${s.id}`}>{s.status === 'live' ? 'Präsentieren' : 'Ergebnisse'}</Link>
+                      {s.status !== 'live' && <button className="btn small mint" onClick={() => reopenSession(s)} title="Schüler können wieder abstimmen; bisherige Antworten bleiben erhalten">↺ Wieder öffnen</button>}
                       <button className="btn small danger" onClick={() => removeSession(s)} title="Löschen">✕</button>
                     </td>
                   </tr>
