@@ -125,6 +125,7 @@ function ScaleResults({ q, answers }) {
 
 function OpenResults({ q, answers }) {
   const texts = answers.map((a) => a.text).filter(Boolean)
+  const notes = answers.filter((a) => a.text).map((a) => ({ text: a.text, name: a._name }))
   if (q.settings?.display === 'cloud') {
     const freq = new Map()
     texts.forEach((t) => {
@@ -145,7 +146,12 @@ function OpenResults({ q, answers }) {
   }
   return (
     <div className="wall">
-      {texts.map((t, i) => <div className="note" key={i} style={{ background: pastel(i) }}>{t}</div>)}
+      {notes.map((n, i) => (
+        <div className="note" key={i} style={{ background: pastel(i) }}>
+          {n.text}
+          {n.name && <span className="note-name">– {n.name}</span>}
+        </div>
+      ))}
     </div>
   )
 }
@@ -157,7 +163,7 @@ function PinResults({ q, answers }) {
   return (
     <div className="pin-stage">
       <CroppedImage url={url} crop={q.settings.crop} dims={{ w: q.settings.image_w, h: q.settings.image_h }} maxHeight="var(--pin-max-h, 58vh)" className="pin-frame">
-        {pins.map((a, i) => <span key={i} className="pin-dot" style={{ left: `${a.x * 100}%`, top: `${a.y * 100}%` }} />)}
+        {pins.map((a, i) => <span key={i} className="pin-dot" title={a._name || undefined} style={{ left: `${a.x * 100}%`, top: `${a.y * 100}%` }} />)}
       </CroppedImage>
       {!pins.length && <div className="muted" style={{ marginTop: 10, fontWeight: 600 }}>Noch keine Pins – scannt den QR-Code und tippt auf das Bild!</div>}
     </div>

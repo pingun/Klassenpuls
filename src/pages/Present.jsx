@@ -29,7 +29,7 @@ export default function Present() {
   }, [sessionId])
 
   const loadResponses = useCallback(async () => {
-    const { data } = await supabase.from('responses').select('id, question_id, answer, participant_id').eq('session_id', sessionId)
+    const { data } = await supabase.from('responses').select('id, question_id, answer, participant_id, participant_name').eq('session_id', sessionId)
     if (data) setResponses(data)
   }, [sessionId])
 
@@ -96,8 +96,9 @@ export default function Present() {
   }, [])
 
   const q = questions[idx]
-  const answers = useMemo(() => responses.filter((r) => r.question_id === q?.id).map((r) => r.answer), [responses, q])
+  const answers = useMemo(() => responses.filter((r) => r.question_id === q?.id).map((r) => (r.participant_name ? { ...r.answer, _name: r.participant_name } : r.answer)), [responses, q])
   const participants = useMemo(() => new Set(responses.map((r) => r.participant_id)).size, [responses])
+  const names = useMemo(() => [...new Set(responses.map((r) => r.participant_name).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de')), [responses])
 
   if (err && !session) return <div className="container"><div className="alert">{err}</div><p><Link to="/dashboard">← Zurück</Link></p></div>
   if (!session) return <div className="container muted">Lade …</div>
@@ -138,7 +139,9 @@ export default function Present() {
         <Link to="/dashboard" className="btn ghost small">← Übersicht</Link>
         {live && <span className="counter" title="Geräte, die gerade verbunden sind">👥 {online} online</span>}
         <span className="counter" title="Antworten auf diese Frage">✔ {answers.length} Antworten</span>
-        <span className="muted small">{participants} Teilnehmer insgesamt</span>
+        <span className="muted small" title={names.length ? `Mit Namen: ${names.join(', ')}` : 'Alle anonym'}>
+          {participants} Teilnehmer insgesamt{names.length ? ` · ${names.length} mit Namen` : ''}
+        </span>
         <div className="grow" />
         {err && <span className="alert small">{err}</span>}
         <button className="btn ghost" onClick={() => go(-1)} disabled={idx === 0} title="Vorherige Frage (←)">←</button>

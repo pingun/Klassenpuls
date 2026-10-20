@@ -287,3 +287,12 @@ table.simple .btn { white-space: nowrap; }
 .ms-btn:hover { background: #f3f3f3; filter: none; }
 .or-line { display: flex; align-items: center; gap: 10px; color: var(--ink-soft); font-size: .85rem; }
 .or-line::before, .or-line::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+/* Freiwilliger Name der Schüler */
+.name-field input { font-weight: 400; }
+.name-field small { display: block; margin-top: 6px; font-weight: 400; line-height: 1.35; }
+.optional-badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: .75rem; font-weight: 700; vertical-align: 1px; }
+.name-bar { font-size: .9rem; color: var(--ink-soft); margin-bottom: 14px; }
+.name-bar button { font: inherit; background: none; border: 0; padding: 0; color: var(--brand); text-decoration: underline; cursor: pointer; }
+.name-bar-edit { margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
+.note-name { display: block; margin-top: 8px; font-size: .85rem; font-weight: 600; opacity: .7; }

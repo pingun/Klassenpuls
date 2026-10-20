@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { supabase, participantId, errorText } from '../supabase'
+import { supabase, participantId, errorText, getParticipantName, setParticipantName } from '../supabase'
+import NameField from '../components/NameField'
 import { pastel } from '../components/Results'
 import Logo from '../components/Logo'
 import CroppedImage from '../components/CroppedImage'
@@ -85,7 +86,8 @@ export default function Join() {
 function Shell({ title, children }) {
   return (
     <div className="student">
-      <div className="row" style={{ marginBottom: 18 }}><Logo /><b className="grow">{title || 'Klassenpuls'}</b></div>
+      <div className="row" style={{ marginBottom: 12 }}><Logo /><b className="grow">{title || 'Klassenpuls'}</b></div>
+      {title && <NameBar />}
       {children}
     </div>
   )
@@ -105,7 +107,7 @@ function QuestionForm({ q, code, initial, onDone }) {
 
   async function send() {
     setBusy(true); setErr('')
-    const { error } = await supabase.rpc('submit_response', { p_code: code, p_question_id: q.id, p_participant: participantId(), p_answer: answer })
+    const { error } = await supabase.rpc('submit_response', { p_code: code, p_question_id: q.id, p_participant: participantId(), p_answer: answer, p_name: getParticipantName() || null })
     setBusy(false)
     if (error) return setErr(errorText(error))
     onDone(answer)
@@ -233,6 +235,31 @@ function PinInput({ q, value, onChange }) {
         )}
       </CroppedImage>
       </div>
+    </div>
+  )
+}
+
+// Kleine Leiste: anonym oder mit (freiwilligem) Namen teilnehmen
+function NameBar() {
+  const [name, setName] = useState(getParticipantName)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(name)
+  if (editing) {
+    return (
+      <form className="card name-bar-edit" onSubmit={(e) => { e.preventDefault(); setName(setParticipantName(draft)); setEditing(false) }}>
+        <NameField value={draft} onChange={setDraft} autoFocus />
+        <div className="row">
+          <button className="btn small">Übernehmen</button>
+          <button type="button" className="btn ghost small" onClick={() => { setDraft(name); setEditing(false) }}>Abbrechen</button>
+        </div>
+      </form>
+    )
+  }
+  return (
+    <div className="name-bar">
+      {name
+        ? <>Du nimmst teil als <b>{name}</b> · <button onClick={() => { setDraft(name); setEditing(true) }}>ändern</button></>
+        : <>Du nimmst <b>anonym</b> teil · <button onClick={() => { setDraft(''); setEditing(true) }}>Namen angeben (freiwillig)</button></>}
     </div>
   )
 }

@@ -426,3 +426,8 @@ language sql volatile security definer set search_path = '' as $$
 $$;
 revoke all on function public.clear_password_flag_for_sso() from public, anon;
 grant execute on function public.clear_password_flag_for_sso() to authenticated;
+
+-- ============ Freiwilliger Name der Schüler ============
+-- (submit_response erhält zusätzlich p_name text default null und speichert ihn in participant_name;
+--  vollständige Fassung siehe Migration "pollbox_participant_name")
+alter table public.responses add column participant_name text check (participant_name is null or length(participant_name) between 1 and 40);

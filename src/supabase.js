@@ -139,3 +139,15 @@ export function captureOAuthError() {
   } catch { /* ignorieren */ }
   window.history.replaceState(null, '', window.location.pathname + '#/login')
 }
+
+// Freiwilliger Anzeigename der Schüler (nur auf diesem Gerät gespeichert)
+const NAME_KEY = 'klassenpuls.name'
+export const NAME_MAX = 40
+export function getParticipantName() {
+  try { return localStorage.getItem(NAME_KEY) || '' } catch { return '' }
+}
+export function setParticipantName(name) {
+  const clean = (name || '').replace(/\s+/g, ' ').trim().slice(0, NAME_MAX)
+  try { if (clean) localStorage.setItem(NAME_KEY, clean); else localStorage.removeItem(NAME_KEY) } catch { /* privater Modus */ }
+  return clean
+}
