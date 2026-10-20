@@ -450,3 +450,7 @@ create policy "logo bucket admin update" on storage.objects for update to authen
   using (bucket_id = 'logos' and (select public.is_admin()));
 create policy "logo bucket admin delete" on storage.objects for delete to authenticated
   using (bucket_id = 'logos' and (select public.is_admin()));
+
+-- ============ Logo pro Umfrage ausblenden ============
+-- polls.hide_logo; get_live_state liefert dann logo_url = null (vollständige Fassung: Migration "pollbox_poll_hide_logo").
+alter table public.polls add column hide_logo boolean not null default false;

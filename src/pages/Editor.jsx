@@ -77,7 +77,7 @@ export default function Editor() {
     setSaving(true)
     try {
       const { error: e1 } = await supabase.from('polls').update({
-        title: poll.title.trim(), description: poll.description?.trim() || null, is_shared: poll.is_shared, updated_at: new Date().toISOString(),
+        title: poll.title.trim(), description: poll.description?.trim() || null, is_shared: poll.is_shared, hide_logo: poll.hide_logo, updated_at: new Date().toISOString(),
       }).eq('id', id)
       if (e1) throw e1
       if (removed.length) {
@@ -146,6 +146,11 @@ export default function Editor() {
         <label className="row" style={{ fontWeight: 700 }}>
           <input type="checkbox" checked={poll.is_shared} onChange={(e) => setPollField('is_shared', e.target.checked)} />
           Mit Kollegen teilen (sie können eine Kopie übernehmen oder die Umfrage selbst starten)
+        </label>
+        <label className="row" style={{ fontWeight: 700 }}>
+          <input type="checkbox" checked={!!poll.hide_logo} onChange={(e) => setPollField('hide_logo', e.target.checked)} />
+          Logo bei dieser Umfrage ausblenden
+          <span className="muted small" style={{ fontWeight: 400 }}>(kein Logo am Beamer und auf den Schülerhandys)</span>
         </label>
       </div>
 

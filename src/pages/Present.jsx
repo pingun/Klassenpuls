@@ -17,16 +17,18 @@ export default function Present() {
   const [err, setErr] = useState('')
   const channelRef = useRef(null)
   const [ownerId, setOwnerId] = useState(null)
-  const logoUrl = useLogoUrl(ownerId)
+  const [hideLogo, setHideLogo] = useState(false)
+  const ownerLogo = useLogoUrl(ownerId)
+  const logoUrl = hideLogo ? null : ownerLogo
 
   // Laden
   useEffect(() => {
     (async () => {
-      const { data: s, error } = await supabase.from('sessions').select('*, polls(title)').eq('id', sessionId).single()
+      const { data: s, error } = await supabase.from('sessions').select('*, polls(title, hide_logo)').eq('id', sessionId).single()
       if (error) return setErr(errorText(error))
       const { data: qs, error: e2 } = await supabase.from('questions').select('*').eq('poll_id', s.poll_id).order('position').order('id')
       if (e2) return setErr(errorText(e2))
-      setSession(s); setQuestions(qs); setOwnerId(s.owner_id)
+      setSession(s); setQuestions(qs); setOwnerId(s.owner_id); setHideLogo(!!s.polls?.hide_logo)
       setQr(await QRCode.toDataURL(joinUrl(s.code), { width: 720, margin: 1, color: { dark: '#2d2e33', light: '#ffffff' } }))
     })()
   }, [sessionId])
