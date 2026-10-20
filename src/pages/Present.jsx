@@ -125,7 +125,7 @@ export default function Present() {
       <div className="present-main">
         {q ? (
           <>
-            <div className="muted small" style={{ fontWeight: 800 }}>{QUESTION_TYPES[q.type].icon} {QUESTION_TYPES[q.type].label}</div>
+            <div className="muted small present-type">{QUESTION_TYPES[q.type].icon} {QUESTION_TYPES[q.type].label}</div>
             <h1>{q.prompt}</h1>
             {session.show_results || !live
               ? <Results question={q} answers={answers} />

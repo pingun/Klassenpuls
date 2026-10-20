@@ -172,7 +172,8 @@ input[type=range] { width: 100%; accent-color: var(--brand); height: 28px; }
 .join-hint img { width: 84px; height: 84px; border-radius: 10px; cursor: zoom-in; }
 .join-hint .code { font-size: 1.9rem; font-weight: 700; color: var(--brand); letter-spacing: .12em; }
 .present-main { flex: 1; padding: 8px 48px 24px; display: flex; flex-direction: column; }
-.present-main h1 { font-size: clamp(1.8rem, 3.6vw, 3.2rem); margin-bottom: 24px; }
+.present-main h1 { font-size: clamp(1.8rem, 3.6vw, 3.2rem); margin-bottom: 24px; text-align: center; text-wrap: balance; }
+.present-type { font-weight: 700; text-align: center; }
 .present-foot { display: flex; align-items: center; gap: 10px; padding: 14px 28px; border-top: 3px solid var(--brand); background: #fff; flex-wrap: wrap; }
 .counter { font-weight: 700; background: #fff; padding: 8px 14px; border-radius: 999px; box-shadow: var(--shadow); }
 .qr-overlay { position: fixed; inset: 0; background: rgba(247,245,245,.97); display: grid; place-items: center; z-index: 50; cursor: zoom-out; text-align: center; }
