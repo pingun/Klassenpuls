@@ -399,3 +399,30 @@ begin
 end $$;
 revoke all on function public.image_usage_count(text) from public, anon;
 grant execute on function public.image_usage_count(text) to authenticated;
+
+-- ============ Anmeldung mit Microsoft ============
+create or replace function public.handle_new_user() returns trigger
+language plpgsql security definer set search_path = '' as $$
+declare inv public.admin_invites;
+begin
+  delete from public.admin_invites
+   where email = lower(new.email) and created_at > now() - interval '10 minutes'
+  returning * into inv;
+  insert into public.profiles (id, email, full_name, is_admin, must_change_password)
+  values (
+    new.id, new.email,
+    nullif(btrim(coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name')), ''),
+    coalesce(inv.make_admin, false) or not exists (select 1 from public.profiles where is_admin),
+    inv.email is not null
+  );
+  return new;
+end $$;
+
+create or replace function public.clear_password_flag_for_sso() returns void
+language sql volatile security definer set search_path = '' as $$
+  update public.profiles p set must_change_password = false
+   where p.id = auth.uid()
+     and exists (select 1 from auth.identities i where i.user_id = p.id and i.provider = 'azure');
+$$;
+revoke all on function public.clear_password_flag_for_sso() from public, anon;
+grant execute on function public.clear_password_flag_for_sso() to authenticated;
