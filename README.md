@@ -1,6 +1,6 @@
 # Klassenpuls – Live-Abstimmungen für den Unterricht
 
-Version 0.7
+Version 0.8
 
 Liveabstimmung: Lehrer erstellen wiederverwendbare Umfragen,
 Schüler machen per QR-Code ohne Konto mit, die Ergebnisse erscheinen live am Beamer.
@@ -36,6 +36,28 @@ Schul-Webserver …). In `.env` `VITE_PUBLIC_URL` auf die öffentliche Adresse s
    Schul-Mailserver eintragen (empfohlen) oder unter **Authentication → Sign In / Providers → Email**
    „Confirm email“ abschalten. Die Domain-Sperre greift in beiden Fällen.
 3. Optional: **Leaked password protection** aktivieren.
+
+## Anmeldung mit Microsoft (optional)
+
+Der Button „Mit Microsoft anmelden“ erscheint automatisch, sobald der Anbieter in Supabase aktiviert ist.
+Die Domain-Freigabe gilt auch hier: Neue Konten entstehen nur für freigegebene Domains oder für
+Lehrer, die ein Admin von Hand angelegt hat.
+
+1. **Microsoft Entra ID** (portal.azure.com → Microsoft Entra ID → App-Registrierungen → Neue Registrierung)
+   - Name: `Klassenpuls`
+   - Unterstützte Kontotypen: **Nur Konten in diesem Organisationsverzeichnis** (nur die eigene Schule)
+   - Umleitungs-URI (Web): `https://<projekt>.supabase.co/auth/v1/callback`
+2. In der App-Registrierung:
+   - **Zertifikate & Geheimnisse** → neuer geheimer Clientschlüssel → den *Wert* kopieren
+   - **Tokenkonfiguration** → optionaler Anspruch (ID-Token) `email` und `xms_edov` hinzufügen
+     (damit Supabase die E-Mail als bestätigt erkennt und bestehende Konten verknüpft)
+   - Auf der Übersichtsseite die **Anwendungs-ID (Client)** und die **Verzeichnis-ID (Mandant)** notieren
+3. **Supabase** → Authentication → Sign In / Providers → **Azure** aktivieren
+   - Client ID = Anwendungs-ID, Secret = Wert des geheimen Schlüssels
+   - Azure Tenant URL = `https://login.microsoftonline.com/<Verzeichnis-ID>`
+4. **Supabase** → Authentication → URL Configuration: die Adresse der App bei „Redirect URLs“ eintragen.
+
+Wer sich per Microsoft anmeldet, muss kein vorläufiges Passwort mehr ändern.
 
 ## Rollen & Lehrer verwalten
 
