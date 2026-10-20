@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase, participantId, errorText, getParticipantName, setParticipantName } from '../supabase'
 import NameField from '../components/NameField'
 import CornerLogo, { useLogoUrl } from '../components/CornerLogo'
+import { useTheme } from '../themes'
 import { pastel } from '../components/Results'
 import Logo from '../components/Logo'
 import CroppedImage from '../components/CroppedImage'
@@ -20,6 +21,7 @@ export default function Join() {
   const [state, setState] = useState(undefined) // undefined = lädt, null = nicht gefunden
   const [answered, setAnswered] = useState({})
   const [editing, setEditing] = useState(false)
+  useTheme(state?.theme)
 
   const refresh = useCallback(async () => {
     const { data, error } = await supabase.rpc('get_live_state', { p_code: code })
@@ -191,7 +193,7 @@ function RankingInput({ q, value, onChange }) {
       ))}
       {rest.length > 0 && order.length > 0 && <hr style={{ border: 0, borderTop: '2px dashed var(--line)', margin: '14px 0' }} />}
       {rest.map((opt) => (
-        <button key={opt} className="choice" style={{ background: '#f3f1f1', fontWeight: 600 }} onClick={() => onChange({ order: [...order, opt] })}>
+        <button key={opt} className="choice" style={{ background: 'var(--muted-bg)', color: 'var(--ink)', fontWeight: 600 }} onClick={() => onChange({ order: [...order, opt] })}>
           <span className="dot" style={{ background: pastel(opt) }}>＋</span>{q.options[opt]}
         </button>
       ))}
@@ -232,7 +234,7 @@ function PinInput({ q, value, onChange }) {
         className="pin-input" onClick={place} role="button" aria-label="Pin auf das Bild setzen">
         {value.x != null && (
           <svg className="pin-mine" viewBox="0 0 24 24" style={{ left: `${value.x * 100}%`, top: `${value.y * 100}%` }}>
-            <path d="M12 0C7 0 3 4 3 9c0 6.5 9 15 9 15s9-8.5 9-15c0-5-4-9-9-9z" fill="#942838" />
+            <path d="M12 0C7 0 3 4 3 9c0 6.5 9 15 9 15s9-8.5 9-15c0-5-4-9-9-9z" style={{ fill: 'var(--brand)' }} />
             <circle cx="12" cy="9" r="3.6" fill="#fff" />
           </svg>
         )}

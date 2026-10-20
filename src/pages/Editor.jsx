@@ -5,8 +5,12 @@ import { QUESTION_TYPES, blankQuestion } from '../questionTypes'
 import StartButton from '../components/StartButton'
 import TypePreview from '../components/TypePreview'
 import PinImageSettings from '../components/PinImageSettings'
+import ThemePreview from '../components/ThemePreview'
+import { THEMES, DEFAULT_THEME, themeByKey, useSchoolTheme } from '../themes'
 
-export default function Editor() {
+export default function Editor({ auth }) {
+  const schoolTheme = useSchoolTheme()
+  const myTheme = auth.profile?.theme || schoolTheme || DEFAULT_THEME
   const { id } = useParams()
   const [poll, setPoll] = useState(null)
   const [questions, setQuestions] = useState([])
@@ -77,7 +81,7 @@ export default function Editor() {
     setSaving(true)
     try {
       const { error: e1 } = await supabase.from('polls').update({
-        title: poll.title.trim(), description: poll.description?.trim() || null, is_shared: poll.is_shared, hide_logo: poll.hide_logo, updated_at: new Date().toISOString(),
+        title: poll.title.trim(), description: poll.description?.trim() || null, is_shared: poll.is_shared, hide_logo: poll.hide_logo, theme: poll.theme || null, updated_at: new Date().toISOString(),
       }).eq('id', id)
       if (e1) throw e1
       if (removed.length) {
@@ -152,6 +156,16 @@ export default function Editor() {
           Logo bei dieser Umfrage ausblenden
           <span className="muted small" style={{ fontWeight: 400 }}>(kein Logo am Beamer und auf den Schülerhandys)</span>
         </label>
+        <div className="row" style={{ alignItems: 'flex-start', gap: 16 }}>
+          <label className="field" style={{ minWidth: 240 }}><span>Stil dieser Umfrage</span>
+            <select value={poll.theme || ''} onChange={(e) => setPollField('theme', e.target.value || null)}>
+              <option value="">Mein Standard ({themeByKey(myTheme).name})</option>
+              {THEMES.map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
+            </select>
+            <small className="muted" style={{ display: 'block', marginTop: 6, fontWeight: 400 }}>Gilt für Beamer und Schülerhandys.</small>
+          </label>
+          <div style={{ width: 220 }}><ThemePreview themeKey={poll.theme || myTheme} /></div>
+        </div>
       </div>
 
       {questions.map((q, i) => (

@@ -6,7 +6,7 @@ import StartButton from '../components/StartButton'
 
 export async function createPoll(template, ownerId) {
   const { data: poll, error } = await supabase.from('polls')
-    .insert({ title: template?.title || 'Neue Umfrage', description: template?.description || null, hide_logo: !!template?.hide_logo, owner_id: ownerId })
+    .insert({ title: template?.title || 'Neue Umfrage', description: template?.description || null, hide_logo: !!template?.hide_logo, theme: template?.theme || null, owner_id: ownerId })
     .select().single()
   if (error) throw error
   if (template?.questions?.length) {
@@ -29,7 +29,7 @@ export default function Dashboard({ auth }) {
 
   const load = useCallback(async () => {
     const [p, s] = await Promise.all([
-      supabase.from('polls').select('id, title, description, is_shared, hide_logo, owner_id, updated_at, questions(count)').order('updated_at', { ascending: false }),
+      supabase.from('polls').select('id, title, description, is_shared, hide_logo, theme, owner_id, updated_at, questions(count)').order('updated_at', { ascending: false }),
       supabase.from('sessions').select('id, label, code, status, created_at, poll_id, polls(title), responses(count)').order('created_at', { ascending: false }).limit(100),
     ])
     if (p.error || s.error) setErr(errorText(p.error || s.error))
@@ -50,7 +50,7 @@ export default function Dashboard({ auth }) {
     const { data: qs, error } = await supabase.from('questions').select('*').eq('poll_id', poll.id).order('position')
     if (error) return setErr(errorText(error))
     try {
-      const copy = await createPoll({ title: poll.owner_id === uid ? `${poll.title} (Kopie)` : poll.title, description: poll.description, hide_logo: poll.hide_logo, questions: qs }, uid)
+      const copy = await createPoll({ title: poll.owner_id === uid ? `${poll.title} (Kopie)` : poll.title, description: poll.description, hide_logo: poll.hide_logo, theme: poll.theme, questions: qs }, uid)
       nav(`/poll/${copy.id}`)
     } catch (e) { setErr(errorText(e)) }
   }

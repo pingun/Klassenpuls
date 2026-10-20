@@ -1,3 +1,4 @@
+import { useTheme } from '../themes'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Logo from '../components/Logo'
@@ -6,6 +7,7 @@ import NameField from '../components/NameField'
 import { getParticipantName, setParticipantName } from '../supabase'
 
 export default function Home({ auth }) {
+  useTheme(null)
   const logoUrl = useLogoUrl(null)
   const [code, setCode] = useState('')
   const [name, setName] = useState(getParticipantName)

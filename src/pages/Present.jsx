@@ -5,8 +5,9 @@ import { supabase, joinUrl, errorText } from '../supabase'
 import { QUESTION_TYPES } from '../questionTypes'
 import Results from '../components/Results'
 import CornerLogo, { useLogoUrl } from '../components/CornerLogo'
+import { useTheme } from '../themes'
 
-export default function Present() {
+export default function Present({ auth }) {
   const { sessionId } = useParams()
   const [session, setSession] = useState(null)
   const [questions, setQuestions] = useState([])
@@ -20,15 +21,17 @@ export default function Present() {
   const [hideLogo, setHideLogo] = useState(false)
   const ownerLogo = useLogoUrl(ownerId)
   const logoUrl = hideLogo ? null : ownerLogo
+  const [pollTheme, setPollTheme] = useState(null)
+  useTheme(pollTheme || auth?.profile?.theme)
 
   // Laden
   useEffect(() => {
     (async () => {
-      const { data: s, error } = await supabase.from('sessions').select('*, polls(title, hide_logo)').eq('id', sessionId).single()
+      const { data: s, error } = await supabase.from('sessions').select('*, polls(title, hide_logo, theme)').eq('id', sessionId).single()
       if (error) return setErr(errorText(error))
       const { data: qs, error: e2 } = await supabase.from('questions').select('*').eq('poll_id', s.poll_id).order('position').order('id')
       if (e2) return setErr(errorText(e2))
-      setSession(s); setQuestions(qs); setOwnerId(s.owner_id); setHideLogo(!!s.polls?.hide_logo)
+      setSession(s); setQuestions(qs); setOwnerId(s.owner_id); setHideLogo(!!s.polls?.hide_logo); setPollTheme(s.polls?.theme || null)
     })()
   }, [sessionId])
 

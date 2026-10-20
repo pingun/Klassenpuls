@@ -16,10 +16,12 @@ import PasswordBox from './components/PasswordBox'
 import ForcePassword from './components/ForcePassword'
 import CornerLogo, { useLogoUrl } from './components/CornerLogo'
 import Settings from './pages/Settings'
+import { useTheme } from './themes'
 
 function TeacherShell({ auth, children, admin = false }) {
   const loc = useLocation()
   const logoUrl = useLogoUrl(auth.session?.user.id, `${auth.profile?.logo_id}|${auth.profile?.hide_logo}`)
+  useTheme(auth.profile?.theme)
   if (auth.loading) return <div className="container muted">Lade …</div>
   if (!auth.session) return <Navigate to="/login" replace state={{ from: loc.pathname }} />
   if (auth.profile?.must_change_password) return <ForcePassword auth={auth} />
@@ -60,7 +62,7 @@ function App() {
       <Route path="/admin" element={<TeacherShell auth={auth} admin><Admin auth={auth} /></TeacherShell>} />
       <Route path="/admin/bilder" element={<TeacherShell auth={auth} admin><Library /></TeacherShell>} />
       <Route path="/einstellungen" element={<TeacherShell auth={auth}><Settings auth={auth} /></TeacherShell>} />
-      <Route path="/present/:sessionId" element={auth.loading ? null : !auth.session ? <Navigate to="/login" replace /> : auth.profile?.must_change_password ? <ForcePassword auth={auth} /> : <Present />} />
+      <Route path="/present/:sessionId" element={auth.loading ? null : !auth.session ? <Navigate to="/login" replace /> : auth.profile?.must_change_password ? <ForcePassword auth={auth} /> : <Present auth={auth} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
