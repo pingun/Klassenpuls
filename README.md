@@ -2,41 +2,20 @@
 
 Version 0.8
 
-Liveabstimmung: Lehrer erstellen wiederverwendbare Umfragen,
+Liveabstimmung: Lehrkräfte erstellen wiederverwendbare Umfragen,
 Schüler machen per QR-Code ohne Konto mit, die Ergebnisse erscheinen live am Beamer.
 
 **Fragetypen:** Multiple Choice (Einzel/Mehrfach) · Ranking · Skala (Aussagen bewerten) · Offene Frage (Pinnwand oder Wortwolke) · Bild anheften (Pins auf ein hochgeladenes Bild)
 **Vorlagen:** „Erwartungen der Schüler managen“ (6 Fragen) und „Feedback zur Stunde“
 
-## Starten (lokal / im Schul-WLAN)
-
-Zuerst `.env.example` nach `.env` kopieren und die Supabase-Zugangsdaten eintragen.
-
-```bash
-npm install
-npm run dev
-```
-
-Die Beamer-Ansicht dann über die **Netzwerk-Adresse** öffnen (z. B. `http://192.168.x.y:5173`),
-nicht über `localhost` – sonst zeigt der QR-Code auf `localhost` und die Handys finden die Seite nicht.
-
-## Dauerhaft veröffentlichen
-
-```bash
-npm run build
-```
-
-Den Ordner `dist/` auf einen beliebigen statischen Webspace legen (Netlify, Vercel, GitHub Pages,
-Schul-Webserver …). In `.env` `VITE_PUBLIC_URL` auf die öffentliche Adresse setzen und neu bauen.
-
-### Veröffentlichung über GitHub Pages
-
-Bei jedem Push auf `main` baut der Workflow `.github/workflows/deploy.yml` die App und veröffentlicht sie
-unter https://pingun.github.io/Klassenpuls/. Die Werte aus `.env` stehen dafür als Repository-Variablen
-unter Settings → Secrets and variables → Actions → **Variables** (`VITE_SUPABASE_URL`,
-`VITE_SUPABASE_ANON_KEY`, `VITE_PUBLIC_URL`). Unter Settings → Pages muss als Quelle „GitHub Actions“ gewählt sein.
-
-## Einmalige Einstellungen im Supabase-Dashboard
+# Verwendete Infrastruktur
+a. DBMS: Diese Web-App verwendet Supabase als Datenbank-Backend.
+b. Authentifizierung:
+- Es muss ein SMTP-Server angegeben werden.
+- Anmeldung mit Microsoft
+c. Keine serverseitige Scriptsprache nötig
+  
+## zu 1. Einmalige Einstellungen im Supabase-Dashboard
 
 1. **Authentication → URL Configuration:** „Site URL“ und „Redirect URLs“ auf die Adresse der App setzen.
 2. **E-Mail-Bestätigung:** Entweder unter **Authentication → Emails → SMTP Settings** einen
@@ -44,7 +23,7 @@ unter Settings → Secrets and variables → Actions → **Variables** (`VITE_SU
    „Confirm email“ abschalten. Die Domain-Sperre greift in beiden Fällen.
 3. Optional: **Leaked password protection** aktivieren.
 
-## Anmeldung mit Microsoft (optional)
+## zu 2. Anmeldung mit Microsoft (optional)
 
 Der Button „Mit Microsoft anmelden“ erscheint automatisch, sobald der Anbieter in Supabase aktiviert ist.
 Die Domain-Freigabe gilt auch hier: Neue Konten entstehen nur für freigegebene Domains oder für
