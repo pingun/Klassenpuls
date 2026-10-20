@@ -2,7 +2,7 @@
 
 Version 0.7
 
-Private Mentimeter-Alternative: Lehrer erstellen wiederverwendbare Umfragen,
+Liveabstimmung: Lehrer erstellen wiederverwendbare Umfragen,
 Schüler machen per QR-Code ohne Konto mit, die Ergebnisse erscheinen live am Beamer.
 
 **Fragetypen:** Multiple Choice (Einzel/Mehrfach) · Ranking · Skala (Aussagen bewerten) · Offene Frage (Pinnwand oder Wortwolke) · Bild anheften (Pins auf ein hochgeladenes Bild)
@@ -32,8 +32,7 @@ Schul-Webserver …). In `.env` `VITE_PUBLIC_URL` auf die öffentliche Adresse s
 ## Einmalige Einstellungen im Supabase-Dashboard
 
 1. **Authentication → URL Configuration:** „Site URL“ und „Redirect URLs“ auf die Adresse der App setzen.
-2. **E-Mail-Bestätigung:** Supabase verschickt ohne eigenen Mailserver nur Mails an Mitglieder
-   des Supabase-Teams. Entweder unter **Authentication → Emails → SMTP Settings** einen
+2. **E-Mail-Bestätigung:** Entweder unter **Authentication → Emails → SMTP Settings** einen
    Schul-Mailserver eintragen (empfohlen) oder unter **Authentication → Sign In / Providers → Email**
    „Confirm email“ abschalten. Die Domain-Sperre greift in beiden Fällen.
 3. Optional: **Leaked password protection** aktivieren.
