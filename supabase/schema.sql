@@ -450,3 +450,25 @@ create policy "logo bucket admin update" on storage.objects for update to authen
   using (bucket_id = 'logos' and (select public.is_admin()));
 create policy "logo bucket admin delete" on storage.objects for delete to authenticated
   using (bucket_id = 'logos' and (select public.is_admin()));
+
+-- ============ Logo pro Umfrage ausblenden ============
+-- polls.hide_logo; get_live_state liefert dann logo_url = null (vollständige Fassung: Migration "pollbox_poll_hide_logo").
+alter table public.polls add column hide_logo boolean not null default false;
+
+-- ============ Beendete Durchläufe wieder öffnen ============
+create or replace function public.reopen_session(p_session uuid) returns text
+language plpgsql volatile security definer set search_path = '' as $$
+declare s public.sessions; new_code text;
+begin
+  select * into s from public.sessions where id = p_session and owner_id = auth.uid() for update;
+  if not found then raise exception 'Durchlauf nicht gefunden'; end if;
+  if s.status = 'live' then return s.code; end if;
+  new_code := s.code;
+  if exists (select 1 from public.sessions where code = s.code and status = 'live' and id <> s.id) then
+    new_code := public.gen_session_code();
+  end if;
+  update public.sessions set status = 'live', ended_at = null, code = new_code where id = s.id;
+  return new_code;
+end $$;
+revoke all on function public.reopen_session(uuid) from public, anon;
+grant execute on function public.reopen_session(uuid) to authenticated;

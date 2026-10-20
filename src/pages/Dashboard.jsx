@@ -6,7 +6,7 @@ import StartButton from '../components/StartButton'
 
 export async function createPoll(template, ownerId) {
   const { data: poll, error } = await supabase.from('polls')
-    .insert({ title: template?.title || 'Neue Umfrage', description: template?.description || null, owner_id: ownerId })
+    .insert({ title: template?.title || 'Neue Umfrage', description: template?.description || null, hide_logo: !!template?.hide_logo, owner_id: ownerId })
     .select().single()
   if (error) throw error
   if (template?.questions?.length) {
@@ -29,7 +29,7 @@ export default function Dashboard({ auth }) {
 
   const load = useCallback(async () => {
     const [p, s] = await Promise.all([
-      supabase.from('polls').select('id, title, description, is_shared, owner_id, updated_at, questions(count)').order('updated_at', { ascending: false }),
+      supabase.from('polls').select('id, title, description, is_shared, hide_logo, owner_id, updated_at, questions(count)').order('updated_at', { ascending: false }),
       supabase.from('sessions').select('id, label, code, status, created_at, poll_id, polls(title), responses(count)').order('created_at', { ascending: false }).limit(100),
     ])
     if (p.error || s.error) setErr(errorText(p.error || s.error))
@@ -50,7 +50,7 @@ export default function Dashboard({ auth }) {
     const { data: qs, error } = await supabase.from('questions').select('*').eq('poll_id', poll.id).order('position')
     if (error) return setErr(errorText(error))
     try {
-      const copy = await createPoll({ title: poll.owner_id === uid ? `${poll.title} (Kopie)` : poll.title, description: poll.description, questions: qs }, uid)
+      const copy = await createPoll({ title: poll.owner_id === uid ? `${poll.title} (Kopie)` : poll.title, description: poll.description, hide_logo: poll.hide_logo, questions: qs }, uid)
       nav(`/poll/${copy.id}`)
     } catch (e) { setErr(errorText(e)) }
   }
@@ -59,6 +59,12 @@ export default function Dashboard({ auth }) {
     if (!confirm(`„${poll.title}“ mit allen Durchläufen und Ergebnissen löschen?`)) return
     const { error } = await supabase.from('polls').delete().eq('id', poll.id)
     if (error) setErr(errorText(error)); else load()
+  }
+
+  async function reopenSession(s) {
+    const { error } = await supabase.rpc('reopen_session', { p_session: s.id })
+    if (error) return setErr(errorText(error))
+    nav(`/present/${s.id}`)
   }
 
   async function removeSession(s) {
@@ -112,6 +118,7 @@ export default function Dashboard({ auth }) {
                     <td>{s.status === 'live' ? <span className="pill live">live · {s.code}</span> : <span className="pill ended">beendet</span>}</td>
                     <td className="row" style={{ justifyContent: 'flex-end' }}>
                       <Link className="btn small sky" to={`/present/${s.id}`}>{s.status === 'live' ? 'Präsentieren' : 'Ergebnisse'}</Link>
+                      {s.status !== 'live' && <button className="btn small mint" onClick={() => reopenSession(s)} title="Schüler können wieder abstimmen; bisherige Antworten bleiben erhalten">↺ Wieder öffnen</button>}
                       <button className="btn small danger" onClick={() => removeSession(s)} title="Löschen">✕</button>
                     </td>
                   </tr>
@@ -129,6 +136,7 @@ export default function Dashboard({ auth }) {
                 <div className="row spread">
                   <h3 style={{ margin: 0 }}>{p.title}</h3>
                   {p.is_shared && tab === 'mine' && <span className="pill">geteilt</span>}
+                  {p.hide_logo && tab === 'mine' && <span className="pill ended" title="Bei dieser Umfrage wird kein Logo angezeigt">ohne Logo</span>}
                 </div>
                 <div className="muted small">{p.questions?.[0]?.count ?? 0} Fragen{p.description ? ` · ${p.description}` : ''}</div>
               </div>

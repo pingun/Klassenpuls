@@ -17,19 +17,26 @@ export default function Present() {
   const [err, setErr] = useState('')
   const channelRef = useRef(null)
   const [ownerId, setOwnerId] = useState(null)
-  const logoUrl = useLogoUrl(ownerId)
+  const [hideLogo, setHideLogo] = useState(false)
+  const ownerLogo = useLogoUrl(ownerId)
+  const logoUrl = hideLogo ? null : ownerLogo
 
   // Laden
   useEffect(() => {
     (async () => {
-      const { data: s, error } = await supabase.from('sessions').select('*, polls(title)').eq('id', sessionId).single()
+      const { data: s, error } = await supabase.from('sessions').select('*, polls(title, hide_logo)').eq('id', sessionId).single()
       if (error) return setErr(errorText(error))
       const { data: qs, error: e2 } = await supabase.from('questions').select('*').eq('poll_id', s.poll_id).order('position').order('id')
       if (e2) return setErr(errorText(e2))
-      setSession(s); setQuestions(qs); setOwnerId(s.owner_id)
-      setQr(await QRCode.toDataURL(joinUrl(s.code), { width: 720, margin: 1, color: { dark: '#2d2e33', light: '#ffffff' } }))
+      setSession(s); setQuestions(qs); setOwnerId(s.owner_id); setHideLogo(!!s.polls?.hide_logo)
     })()
   }, [sessionId])
+
+  const sessionCode = session?.code
+  useEffect(() => {
+    if (!sessionCode) return
+    QRCode.toDataURL(joinUrl(sessionCode), { width: 720, margin: 1, color: { dark: '#2d2e33', light: '#ffffff' } }).then(setQr)
+  }, [sessionCode])
 
   const loadResponses = useCallback(async () => {
     const { data } = await supabase.from('responses').select('id, question_id, answer, participant_id, participant_name').eq('session_id', sessionId)
@@ -78,6 +85,12 @@ export default function Present() {
     if (n !== idx) patch({ current_index: n })
   }
   const toggleResults = () => patch({ show_results: !session.show_results })
+  async function reopen() {
+    setErr('')
+    const { data: code, error } = await supabase.rpc('reopen_session', { p_session: sessionId })
+    if (error) return setErr(errorText(error))
+    setSession((prev) => ({ ...prev, status: 'live', ended_at: null, code }))
+  }
   const end = () => { if (confirm('Umfrage beenden? Schüler können danach nicht mehr abstimmen. Die Ergebnisse bleiben gespeichert.')) patch({ status: 'ended', ended_at: new Date().toISOString() }) }
   const fullscreen = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())
 
@@ -153,6 +166,7 @@ export default function Present() {
         {live && <button className="btn peach" onClick={toggleResults} title="Taste R">{session.show_results ? 'Ergebnisse verbergen' : 'Ergebnisse zeigen'}</button>}
         <button className="btn ghost" onClick={fullscreen} title="Vollbild (Taste F)">⛶</button>
         {live && <button className="btn danger" onClick={end}>Beenden</button>}
+        {!live && <button className="btn mint" onClick={reopen} title="Schüler können wieder abstimmen; bisherige Antworten bleiben erhalten">↺ Wieder öffnen</button>}
       </div>
 
       {bigQr && live && (
