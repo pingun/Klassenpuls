@@ -29,6 +29,13 @@ npm run build
 Den Ordner `dist/` auf einen beliebigen statischen Webspace legen (Netlify, Vercel, GitHub Pages,
 Schul-Webserver …). In `.env` `VITE_PUBLIC_URL` auf die öffentliche Adresse setzen und neu bauen.
 
+### Veröffentlichung über GitHub Pages
+
+Bei jedem Push auf `main` baut der Workflow `.github/workflows/deploy.yml` die App und veröffentlicht sie
+unter https://pingun.github.io/Klassenpuls/. Die Werte aus `.env` stehen dafür als Repository-Variablen
+unter Settings → Secrets and variables → Actions → **Variables** (`VITE_SUPABASE_URL`,
+`VITE_SUPABASE_ANON_KEY`, `VITE_PUBLIC_URL`). Unter Settings → Pages muss als Quelle „GitHub Actions“ gewählt sein.
+
 ## Einmalige Einstellungen im Supabase-Dashboard
 
 1. **Authentication → URL Configuration:** „Site URL“ und „Redirect URLs“ auf die Adresse der App setzen.
