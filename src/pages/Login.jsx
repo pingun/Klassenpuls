@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
-import { supabase, errorText, appBaseUrl } from '../supabase'
+import { supabase, errorText, appBaseUrl, authProviders, signInWithMicrosoft, OAUTH_ERROR } from '../supabase'
 import Logo from '../components/Logo'
 
 export default function Login({ auth }) {
@@ -10,6 +10,24 @@ export default function Login({ auth }) {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
+  const [microsoft, setMicrosoft] = useState(false)
+
+  useEffect(() => {
+    authProviders().then((p) => setMicrosoft(!!p.azure))
+    try {
+      const err = sessionStorage.getItem(OAUTH_ERROR)
+      if (err) {
+        sessionStorage.removeItem(OAUTH_ERROR)
+        setMsg({ ok: false, text: `Anmeldung mit Microsoft fehlgeschlagen: ${errorText({ message: err })}` })
+      }
+    } catch { /* ignorieren */ }
+  }, [])
+
+  async function microsoftLogin() {
+    setBusy(true); setMsg(null)
+    const { error } = await signInWithMicrosoft()
+    if (error) { setBusy(false); setMsg({ ok: false, text: errorText(error) }) }
+  }
 
   if (!auth.loading && auth.session) return <Navigate to="/dashboard" replace />
 
@@ -46,6 +64,15 @@ export default function Login({ auth }) {
         <p className="muted">Bereich für Lehrer</p>
       </div>
       <form className="card stack" onSubmit={submit}>
+        {microsoft && mode !== 'reset' && (
+          <>
+            <button type="button" className="btn ms-btn big" onClick={microsoftLogin} disabled={busy}>
+              <svg width="20" height="20" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022" /><rect x="11" y="1" width="9" height="9" fill="#7fba00" /><rect x="1" y="11" width="9" height="9" fill="#00a4ef" /><rect x="11" y="11" width="9" height="9" fill="#ffb900" /></svg>
+              Mit Microsoft anmelden
+            </button>
+            <div className="or-line"><span>oder mit E-Mail und Passwort</span></div>
+          </>
+        )}
         <div className="tabs" style={{ margin: '0 auto' }}>
           <button type="button" className={mode === 'login' ? 'on' : ''} onClick={() => { setMode('login'); setMsg(null) }}>Anmelden</button>
           <button type="button" className={mode === 'register' ? 'on' : ''} onClick={() => { setMode('register'); setMsg(null) }}>Registrieren</button>

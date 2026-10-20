@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
-import { HashRouter, Routes, Route, Navigate, NavLink, Link, useLocation } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
 import './styles.css'
-import { supabase, useAuth } from './supabase'
+import { supabase, useAuth, takeOAuthPending, captureOAuthError } from './supabase'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -42,6 +42,11 @@ function TeacherShell({ auth, children, admin = false }) {
 
 function App() {
   const auth = useAuth()
+  const nav = useNavigate()
+  // Nach der Rückkehr von der Microsoft-Anmeldung direkt zu den Umfragen
+  useEffect(() => {
+    if (!auth.loading && auth.session && takeOAuthPending()) nav('/dashboard', { replace: true })
+  }, [auth.loading, auth.session, nav])
   return (
     <Routes>
       <Route path="/" element={auth.recovery ? <Navigate to="/dashboard" replace /> : <Home auth={auth} />} />
@@ -56,6 +61,8 @@ function App() {
     </Routes>
   )
 }
+
+captureOAuthError()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

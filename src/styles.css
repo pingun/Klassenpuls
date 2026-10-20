@@ -280,3 +280,9 @@ table.simple .btn { white-space: nowrap; }
 .lib-card input { padding: 7px 10px; }
 .lib-thumb { display: block; border-radius: 10px; overflow: hidden; background: var(--bg); }
 .lib-thumb img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; display: block; }
+
+/* Microsoft-Anmeldung */
+.ms-btn { width: 100%; justify-content: center; background: #fff; color: #2d2e33; border: 2px solid #8c8c8c; font-weight: 600; }
+.ms-btn:hover { background: #f3f3f3; filter: none; }
+.or-line { display: flex; align-items: center; gap: 10px; color: var(--ink-soft); font-size: .85rem; }
+.or-line::before, .or-line::after { content: ''; flex: 1; height: 1px; background: var(--line); }
