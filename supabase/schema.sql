@@ -435,3 +435,18 @@ alter table public.responses add column participant_name text check (participant
 -- ============ Logos (Admin verwaltet, Lehrer wählt oder blendet aus; Anzeige mittig unten) ============
 -- Tabellen logos und app_settings, profiles.logo_id und profiles.hide_logo ("kein Logo"), Funktionen effective_logo_url und set_my_logo,
 -- get_live_state liefert zusätzlich logo_url. Vollständige Fassung: Migrationen "pollbox_logos" und "pollbox_logo_hide".
+
+-- ============ Eigener Speicher für Logos (auch SVG) ============
+-- SVG-Dateien werden vor dem Hochladen im Browser bereinigt (Skripte, Event-Handler, externe Verweise).
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('logos', 'logos', true, 2097152, array['image/png','image/jpeg','image/webp','image/svg+xml'])
+on conflict (id) do update set allowed_mime_types = excluded.allowed_mime_types, file_size_limit = excluded.file_size_limit, public = true;
+
+create policy "logo bucket admin select" on storage.objects for select to authenticated
+  using (bucket_id = 'logos' and (select public.is_admin()));
+create policy "logo bucket admin insert" on storage.objects for insert to authenticated
+  with check (bucket_id = 'logos' and (select public.is_admin()));
+create policy "logo bucket admin update" on storage.objects for update to authenticated
+  using (bucket_id = 'logos' and (select public.is_admin()));
+create policy "logo bucket admin delete" on storage.objects for delete to authenticated
+  using (bucket_id = 'logos' and (select public.is_admin()));
