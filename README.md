@@ -48,9 +48,10 @@ Wer sich per Microsoft anmeldet, muss kein vorläufiges Passwort mehr ändern.
 ## Stile
 
 Es gibt 8 Stile (Schul-Klassik, Nordisch, Waldgrün, Graphit dunkel, Akademie-Blau, Terrakotta,
-Pflaume und Salbei, Hoher Kontrast). Jeder Lehrer wählt unter **Einstellungen** seinen Standardstil;
-im Editor kann jede Umfrage einen eigenen Stil bekommen. Lehrerseiten nutzen den Standardstil,
-Beamer und Schülerhandys den Stil der Umfrage (sonst den Standardstil des Lehrers).
+Pflaume und Salbei, Hoher Kontrast). Admins legen unter **Verwaltung** den **Schulstandard** fest.
+Jeder Lehrer kann unter **Einstellungen** einen eigenen Standardstil wählen; im Editor kann jede Umfrage
+einen eigenen Stil bekommen. Reihenfolge: Stil der Umfrage → Stil des Lehrers → Schulstandard → Schul-Klassik.
+Lehrerseiten nutzen den Stil des Lehrers, Beamer und Schülerhandys den Stil der Umfrage, Startseite und Login den Schulstandard.
 Die Paletten stehen zentral in `src/themes.js`.
 
 ## Rollen & Lehrer verwalten

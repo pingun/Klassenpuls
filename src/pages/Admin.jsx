@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase, errorText, invokeFunction, appBaseUrl } from '../supabase'
 import LogoAdmin from '../components/LogoAdmin'
+import ThemePreview from '../components/ThemePreview'
+import { THEMES, DEFAULT_THEME, useSchoolTheme, notifySchoolThemeChanged } from '../themes'
 
 export default function Admin({ auth }) {
   const [domains, setDomains] = useState([])
@@ -123,6 +125,8 @@ export default function Admin({ auth }) {
         </div>
       </div>
 
+      <SchoolThemeAdmin />
+
       <LogoAdmin />
 
       <div className="card stack">
@@ -218,6 +222,36 @@ function CredentialsCard({ c, onClose }) {
         <button className="btn" onClick={() => copy('text', text)}>{copied === 'text' ? 'Kopiert ✓' : 'Nachricht kopieren'}</button>
         <a className="btn sky" href={mailto}>✉ Per E-Mail senden</a>
         <a className="btn sky" href={teams} target="_blank" rel="noreferrer">In Teams öffnen</a>
+      </div>
+    </div>
+  )
+}
+
+// Admin: schulweiter Standardstil (gilt für alle, die keinen eigenen Stil gewählt haben)
+function SchoolThemeAdmin() {
+  const current = useSchoolTheme() || DEFAULT_THEME
+  const [msg, setMsg] = useState(null)
+  async function choose(key) {
+    setMsg(null)
+    const { error } = await supabase.from('app_settings').upsert({ key: 'default_theme', value: { theme: key }, updated_at: new Date().toISOString() })
+    if (error) return setMsg({ ok: false, text: errorText(error) })
+    notifySchoolThemeChanged()
+    setMsg({ ok: true, text: 'Schulstandard gespeichert ✓' })
+  }
+  return (
+    <div className="card stack">
+      <h3 style={{ margin: 0 }}>Schulstandard-Stil</h3>
+      <p className="muted small" style={{ margin: 0 }}>
+        Gilt für Startseite und Login sowie für alle Lehrer, die unter „Einstellungen“ keinen eigenen Stil gewählt haben.
+      </p>
+      {msg && <div className={`alert ${msg.ok ? 'ok' : ''}`}>{msg.text}</div>}
+      <div className="theme-grid">
+        {THEMES.map((t) => (
+          <button key={t.key} className={`theme-tile ${current === t.key ? 'on' : ''}`} onClick={() => choose(t.key)}>
+            <ThemePreview themeKey={t.key} />
+            <b className="small">{t.name}{current === t.key ? ' ✓ Schulstandard' : ''}</b>
+          </button>
+        ))}
       </div>
     </div>
   )

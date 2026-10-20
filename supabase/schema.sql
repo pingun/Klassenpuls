@@ -486,3 +486,13 @@ revoke all on function public.set_my_theme(text) from public, anon;
 grant execute on function public.set_my_theme(text) to authenticated;
 -- get_live_state liefert zusätzlich 'theme' = coalesce(polls.theme, profiles.theme der Lehrkraft)
 -- (vollständige Fassung: Migration "pollbox_themes")
+
+-- ============ Schulstandard-Stil (Admin) ============
+-- app_settings 'default_theme' = {"theme": "<key>"}; Reihenfolge: Umfrage → Lehrkraft → Schulstandard → klassik
+create or replace function public.school_theme() returns text
+language sql stable security definer set search_path = '' as $$
+  select s.value->>'theme' from public.app_settings s where s.key = 'default_theme';
+$$;
+revoke all on function public.school_theme() from public;
+grant execute on function public.school_theme() to anon, authenticated;
+-- get_live_state: 'theme' = coalesce(polls.theme, profiles.theme, school_theme()) (Migration "pollbox_school_theme")

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, errorText } from '../supabase'
 import { notifyLogoChanged } from '../components/CornerLogo'
 import ThemePreview from '../components/ThemePreview'
-import { THEMES, DEFAULT_THEME } from '../themes'
+import { THEMES, DEFAULT_THEME, themeByKey, useSchoolTheme } from '../themes'
 
 // Persönliche Einstellungen: eigenes Logo wählen und Passwort ändern
 export default function Settings({ auth }) {
@@ -103,7 +103,8 @@ function PasswordCard() {
 }
 
 function ThemeCard({ auth }) {
-  const current = auth.profile?.theme || DEFAULT_THEME
+  const school = useSchoolTheme() || DEFAULT_THEME
+  const current = auth.profile?.theme || null // null = Schulstandard
   const [msg, setMsg] = useState(null)
   async function choose(key) {
     setMsg(null)
@@ -121,11 +122,16 @@ function ThemeCard({ auth }) {
       </p>
       {msg && <div className={`alert ${msg.ok ? 'ok' : ''}`}>{msg.text}</div>}
       <div className="theme-grid">
+        <button className={`theme-tile ${!current ? 'on' : ''}`} onClick={() => choose(null)}>
+          <ThemePreview themeKey={school} />
+          <b className="small">Schulstandard verwenden{!current ? ' ✓' : ''}</b>
+          <span className="muted small">Zurzeit: {themeByKey(school).name}. Ändert sich mit, wenn der Admin den Schulstandard wechselt.</span>
+        </button>
         {THEMES.map((t) => (
           <button key={t.key} className={`theme-tile ${current === t.key ? 'on' : ''}`} onClick={() => choose(t.key)}>
             <ThemePreview themeKey={t.key} />
             <b className="small">{t.name}{current === t.key ? ' ✓' : ''}</b>
-            <span className="muted small">{t.desc}</span>
+            <span className="muted small">{t.desc}{t.key === school ? ' · Schulstandard' : ''}</span>
           </button>
         ))}
       </div>

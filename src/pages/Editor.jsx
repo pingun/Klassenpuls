@@ -6,9 +6,11 @@ import StartButton from '../components/StartButton'
 import TypePreview from '../components/TypePreview'
 import PinImageSettings from '../components/PinImageSettings'
 import ThemePreview from '../components/ThemePreview'
-import { THEMES, DEFAULT_THEME, themeByKey } from '../themes'
+import { THEMES, DEFAULT_THEME, themeByKey, useSchoolTheme } from '../themes'
 
 export default function Editor({ auth }) {
+  const schoolTheme = useSchoolTheme()
+  const myTheme = auth.profile?.theme || schoolTheme || DEFAULT_THEME
   const { id } = useParams()
   const [poll, setPoll] = useState(null)
   const [questions, setQuestions] = useState([])
@@ -157,12 +159,12 @@ export default function Editor({ auth }) {
         <div className="row" style={{ alignItems: 'flex-start', gap: 16 }}>
           <label className="field" style={{ minWidth: 240 }}><span>Stil dieser Umfrage</span>
             <select value={poll.theme || ''} onChange={(e) => setPollField('theme', e.target.value || null)}>
-              <option value="">Mein Standard ({themeByKey(auth.profile?.theme || DEFAULT_THEME).name})</option>
+              <option value="">Mein Standard ({themeByKey(myTheme).name})</option>
               {THEMES.map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
             </select>
             <small className="muted" style={{ display: 'block', marginTop: 6, fontWeight: 400 }}>Gilt für Beamer und Schülerhandys.</small>
           </label>
-          <div style={{ width: 220 }}><ThemePreview themeKey={poll.theme || auth.profile?.theme || DEFAULT_THEME} /></div>
+          <div style={{ width: 220 }}><ThemePreview themeKey={poll.theme || myTheme} /></div>
         </div>
       </div>
 

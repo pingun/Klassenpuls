@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { supabase } from './supabase'
 
 // Alle Stile der App. Jeder Stil setzt dieselben CSS-Variablen; Komponenten nutzen nur diese Variablen.
 // c1–c8: helle Flächen für Diagramme, Antwortknöpfe und Notizzettel (Text darauf: chartInk)
@@ -149,7 +150,38 @@ export function applyTheme(key) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t.v.topbar)
 }
 
-// Stil für die aktuelle Seite setzen (null/undefined = Standard)
+// ---- Schulstandard (vom Admin festgelegt) ----
+const SCHOOL_EVENT = 'klassenpuls:school-theme'
+let schoolPromise = null
+function loadSchoolTheme(force = false) {
+  if (!schoolPromise || force) {
+    schoolPromise = supabase.rpc('school_theme').then(({ data }) => data || null, () => null)
+  }
+  return schoolPromise
+}
+// nach einer Änderung durch den Admin alle Seiten neu einfärben
+export function notifySchoolThemeChanged() {
+  loadSchoolTheme(true)
+  window.dispatchEvent(new Event(SCHOOL_EVENT))
+}
+
+export function useSchoolTheme() {
+  const [school, setSchool] = useState(null)
+  useEffect(() => {
+    let alive = true
+    const load = (force) => loadSchoolTheme(force).then((t) => { if (alive) setSchool(t) })
+    load(false)
+    const onChange = () => load(false)
+    window.addEventListener(SCHOOL_EVENT, onChange)
+    return () => { alive = false; window.removeEventListener(SCHOOL_EVENT, onChange) }
+  }, [])
+  return school
+}
+
+// Stil für die aktuelle Seite setzen: angegebener Stil, sonst Schulstandard, sonst Schul-Klassik
 export function useTheme(key) {
-  useEffect(() => { applyTheme(key || DEFAULT_THEME) }, [key])
+  const school = useSchoolTheme()
+  const effective = key || school || DEFAULT_THEME
+  useEffect(() => { applyTheme(effective) }, [effective])
+  return effective
 }
