@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase, errorText } from '../supabase'
-import { uploadLogo, BUCKET } from '../images'
+import { uploadLogo, logoBucketFor, LOGO_ACCEPT } from '../images'
 import { notifyLogoChanged } from './CornerLogo'
 
 const titleFromFile = (name) => name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim().slice(0, 80) || 'Logo'
@@ -37,7 +37,7 @@ export default function LogoAdmin() {
       try {
         const img = await uploadLogo(file)
         const { error } = await supabase.from('logos').insert({ path: img.path, url: img.url, width: img.width, height: img.height, title: titleFromFile(file.name) })
-        if (error) { await supabase.storage.from(BUCKET).remove([img.path]); throw error }
+        if (error) { await supabase.storage.from(logoBucketFor(img.path)).remove([img.path]); throw error }
       } catch (e2) { failed.push(`${file.name}: ${errorText(e2)}`) }
     }
     setBusy(false)
@@ -70,7 +70,7 @@ export default function LogoAdmin() {
     if (logo.id === defaultId) await supabase.from('app_settings').delete().eq('key', 'default_logo')
     const { error } = await supabase.from('logos').delete().eq('id', logo.id)
     if (error) return setErr(errorText(error))
-    await supabase.storage.from(BUCKET).remove([logo.path])
+    await supabase.storage.from(logoBucketFor(logo.path)).remove([logo.path])
     notifyLogoChanged(); load()
   }
 
@@ -80,12 +80,12 @@ export default function LogoAdmin() {
         <h3 style={{ margin: 0 }}>Logos</h3>
         <label className="btn mint" style={{ cursor: busy ? 'wait' : 'pointer' }}>
           {busy ? 'Lade hoch …' : '⬆ Logo hochladen'}
-          <input type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={upload} disabled={busy} style={{ display: 'none' }} />
+          <input type="file" accept={LOGO_ACCEPT} multiple onChange={upload} disabled={busy} style={{ display: 'none' }} />
         </label>
       </div>
       <p className="muted small" style={{ margin: 0 }}>
         Das Logo erscheint mittig unten auf allen Seiten. Das <b>Standardlogo</b> gilt für alle; Lehrer können unter
-        „Einstellungen“ ein anderes Logo aus dieser Liste wählen oder das Logo ausblenden. Ideal: PNG mit transparentem Hintergrund.
+        „Einstellungen“ ein anderes Logo aus dieser Liste wählen oder das Logo ausblenden. Ideal: SVG oder PNG mit transparentem Hintergrund.
       </p>
       {err && <div className="alert">{err}</div>}
       {!logos.length && <p className="muted" style={{ margin: 0 }}>Noch keine Logos hochgeladen.</p>}
