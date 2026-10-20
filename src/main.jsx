@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { HashRouter, Routes, Route, Navigate, NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
 import './styles.css'
@@ -14,10 +14,12 @@ import Library from './pages/Library'
 import Logo from './components/Logo'
 import PasswordBox from './components/PasswordBox'
 import ForcePassword from './components/ForcePassword'
+import CornerLogo, { useLogoUrl } from './components/CornerLogo'
+import Settings from './pages/Settings'
 
 function TeacherShell({ auth, children, admin = false }) {
   const loc = useLocation()
-  const [pwOpen, setPwOpen] = useState(false)
+  const logoUrl = useLogoUrl(auth.session?.user.id, auth.profile?.logo_id)
   if (auth.loading) return <div className="container muted">Lade …</div>
   if (!auth.session) return <Navigate to="/login" replace state={{ from: loc.pathname }} />
   if (auth.profile?.must_change_password) return <ForcePassword auth={auth} />
@@ -30,12 +32,13 @@ function TeacherShell({ auth, children, admin = false }) {
           <NavLink to="/dashboard">Meine Umfragen</NavLink>
           {auth.profile?.is_admin && <NavLink to="/admin" end>Verwaltung</NavLink>}
           {auth.profile?.is_admin && <NavLink to="/admin/bilder">Bildbibliothek</NavLink>}
-          <button className="btn ghost small" title="Passwort ändern" onClick={() => setPwOpen(true)}>{auth.profile?.full_name || auth.session.user.email}</button>
+          <NavLink to="/einstellungen" className="user-link" title="Einstellungen: Logo und Passwort">⚙ {auth.profile?.full_name || auth.session.user.email}</NavLink>
           <button className="btn ghost small" onClick={() => supabase.auth.signOut()}>Abmelden</button>
         </nav>
       </header>
-      {(pwOpen || auth.recovery) && <PasswordBox recovery={auth.recovery} onDone={() => { setPwOpen(false); auth.clearRecovery() }} />}
+      {auth.recovery && <PasswordBox recovery onDone={() => auth.clearRecovery()} />}
       {children}
+      <CornerLogo url={logoUrl} />
     </>
   )
 }
@@ -56,6 +59,7 @@ function App() {
       <Route path="/poll/:id" element={<TeacherShell auth={auth}><Editor auth={auth} /></TeacherShell>} />
       <Route path="/admin" element={<TeacherShell auth={auth} admin><Admin auth={auth} /></TeacherShell>} />
       <Route path="/admin/bilder" element={<TeacherShell auth={auth} admin><Library /></TeacherShell>} />
+      <Route path="/einstellungen" element={<TeacherShell auth={auth}><Settings auth={auth} /></TeacherShell>} />
       <Route path="/present/:sessionId" element={auth.loading ? null : !auth.session ? <Navigate to="/login" replace /> : auth.profile?.must_change_password ? <ForcePassword auth={auth} /> : <Present />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

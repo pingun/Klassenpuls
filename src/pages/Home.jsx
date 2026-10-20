@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Logo from '../components/Logo'
+import CornerLogo, { useLogoUrl } from '../components/CornerLogo'
 import NameField from '../components/NameField'
 import { getParticipantName, setParticipantName } from '../supabase'
 
 export default function Home({ auth }) {
+  const logoUrl = useLogoUrl(null)
   const [code, setCode] = useState('')
   const [name, setName] = useState(getParticipantName)
   const nav = useNavigate()
@@ -28,6 +30,7 @@ export default function Home({ auth }) {
       <p className="center muted small" style={{ marginTop: 28 }}>
         Lehrer? {auth.session ? <Link to="/dashboard">Zu meinen Umfragen</Link> : <Link to="/login">Anmelden oder registrieren</Link>}
       </p>
+      <CornerLogo url={logoUrl} />
     </div>
   )
 }

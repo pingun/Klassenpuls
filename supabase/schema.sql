@@ -431,3 +431,7 @@ grant execute on function public.clear_password_flag_for_sso() to authenticated;
 -- (submit_response erhält zusätzlich p_name text default null und speichert ihn in participant_name;
 --  vollständige Fassung siehe Migration "pollbox_participant_name")
 alter table public.responses add column participant_name text check (participant_name is null or length(participant_name) between 1 and 40);
+
+-- ============ Logos (Admin verwaltet, Lehrer wählt; Anzeige unten links) ============
+-- Tabellen logos und app_settings, profiles.logo_id, Funktionen effective_logo_url und set_my_logo,
+-- get_live_state liefert zusätzlich logo_url. Vollständige Fassung: Migration "pollbox_logos".
