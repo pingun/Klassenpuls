@@ -296,3 +296,27 @@ table.simple .btn { white-space: nowrap; }
 .name-bar button { font: inherit; background: none; border: 0; padding: 0; color: var(--brand); text-decoration: underline; cursor: pointer; }
 .name-bar-edit { margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
 .note-name { display: block; margin-top: 8px; font-size: .85rem; font-weight: 600; opacity: .7; }
+
+/* Logo: zentriert am Seitenende (am Beamer mittig in der Fußleiste) */
+.corner-logo { display: flex; justify-content: center; margin: 8px 16px 20px; }
+.corner-logo img { display: block; max-height: 52px; max-width: 220px; object-fit: contain; }
+.corner-logo.inline { margin: 0; }
+.corner-logo.inline img { max-height: 40px; max-width: 180px; }
+.present-foot .foot-center { flex: 1; display: flex; justify-content: center; min-width: 0; }
+@media (min-width: 1100px) {
+  .present-foot { position: relative; }
+  .present-foot .foot-center .corner-logo { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+}
+@media (max-width: 640px) { .corner-logo img { max-height: 44px; } }
+
+/* Logo-Verwaltung und -Auswahl */
+.logo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.logo-tile { border: 2px solid var(--line); border-radius: 14px; padding: 10px; background: #fff; display: flex; flex-direction: column; gap: 8px; font: inherit; color: inherit; text-align: left; }
+button.logo-tile { cursor: pointer; }
+button.logo-tile:hover { border-color: var(--brand-tint); }
+.logo-tile.on, button.logo-tile.on:hover { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-soft); }
+.logo-box { height: 90px; border-radius: 10px; display: grid; place-items: center; padding: 10px;
+  background: repeating-conic-gradient(#f1eeee 0% 25%, #fff 0% 50%) 50% / 16px 16px; }
+.logo-box img { max-width: 100%; max-height: 70px; object-fit: contain; }
+.logo-tile input { padding: 6px 10px; }
+.topbar nav a.user-link { text-transform: none; letter-spacing: 0; border: 2px solid rgba(255,255,255,.4); padding: 4px 12px; }

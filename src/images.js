@@ -42,3 +42,28 @@ export async function uploadImage(file, folder) {
 }
 
 export const FULL = { x: 0, y: 0, w: 1, h: 1 }
+
+// Logos: Transparenz erhalten, nur sehr große Dateien auf max. 800 px verkleinern
+export async function uploadLogo(file) {
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) throw new Error('Bitte ein Logo als PNG, JPG oder WebP wählen (PNG mit transparentem Hintergrund ist ideal).')
+  const url = URL.createObjectURL(file)
+  try {
+    const img = await loadImage(url)
+    let blob = file, width = img.naturalWidth, height = img.naturalHeight
+    const max = 800
+    if (Math.max(width, height) > max || file.size > 1_000_000) {
+      const scale = Math.min(1, max / Math.max(width, height))
+      const c = document.createElement('canvas')
+      c.width = Math.round(width * scale); c.height = Math.round(height * scale)
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height)
+      const type = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/png'
+      blob = await new Promise((res) => c.toBlob(res, type, 0.9))
+      width = c.width; height = c.height
+    }
+    const ext = blob.type === 'image/jpeg' ? 'jpg' : blob.type.split('/')[1]
+    const path = `logos/${crypto.randomUUID()}.${ext}`
+    const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: blob.type, cacheControl: '31536000' })
+    if (error) throw error
+    return { url: supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl, path, width, height }
+  } finally { URL.revokeObjectURL(url) }
+}

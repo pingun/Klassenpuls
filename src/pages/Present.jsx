@@ -4,6 +4,7 @@ import QRCode from 'qrcode'
 import { supabase, joinUrl, errorText } from '../supabase'
 import { QUESTION_TYPES } from '../questionTypes'
 import Results from '../components/Results'
+import CornerLogo, { useLogoUrl } from '../components/CornerLogo'
 
 export default function Present() {
   const { sessionId } = useParams()
@@ -15,6 +16,8 @@ export default function Present() {
   const [online, setOnline] = useState(0)
   const [err, setErr] = useState('')
   const channelRef = useRef(null)
+  const [ownerId, setOwnerId] = useState(null)
+  const logoUrl = useLogoUrl(ownerId)
 
   // Laden
   useEffect(() => {
@@ -23,7 +26,7 @@ export default function Present() {
       if (error) return setErr(errorText(error))
       const { data: qs, error: e2 } = await supabase.from('questions').select('*').eq('poll_id', s.poll_id).order('position').order('id')
       if (e2) return setErr(errorText(e2))
-      setSession(s); setQuestions(qs)
+      setSession(s); setQuestions(qs); setOwnerId(s.owner_id)
       setQr(await QRCode.toDataURL(joinUrl(s.code), { width: 720, margin: 1, color: { dark: '#2d2e33', light: '#ffffff' } }))
     })()
   }, [sessionId])
@@ -142,7 +145,7 @@ export default function Present() {
         <span className="muted small" title={names.length ? `Mit Namen: ${names.join(', ')}` : 'Alle anonym'}>
           {participants} Teilnehmer insgesamt{names.length ? ` · ${names.length} mit Namen` : ''}
         </span>
-        <div className="grow" />
+        <div className="foot-center"><CornerLogo url={logoUrl} inline /></div>
         {err && <span className="alert small">{err}</span>}
         <button className="btn ghost" onClick={() => go(-1)} disabled={idx === 0} title="Vorherige Frage (←)">←</button>
         <span className="counter">{questions.length ? idx + 1 : 0} / {questions.length}</span>

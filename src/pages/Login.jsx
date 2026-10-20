@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
 import { supabase, errorText, appBaseUrl, authProviders, signInWithMicrosoft, OAUTH_ERROR } from '../supabase'
 import Logo from '../components/Logo'
+import CornerLogo, { useLogoUrl } from '../components/CornerLogo'
 
 export default function Login({ auth }) {
+  const logoUrl = useLogoUrl(null)
   const [mode, setMode] = useState('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -97,6 +99,7 @@ export default function Login({ auth }) {
         {mode === 'login' && <button type="button" className="btn ghost small" style={{ margin: '0 auto' }} onClick={() => setMode('reset')}>Passwort vergessen?</button>}
         {mode === 'register' && <p className="muted small center">Registrieren können sich nur Lehrer mit einer freigegebenen Schul-Domain.</p>}
       </form>
+      <CornerLogo url={logoUrl} />
     </div>
   )
 }

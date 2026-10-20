@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase, participantId, errorText, getParticipantName, setParticipantName } from '../supabase'
 import NameField from '../components/NameField'
+import CornerLogo, { useLogoUrl } from '../components/CornerLogo'
 import { pastel } from '../components/Results'
 import Logo from '../components/Logo'
 import CroppedImage from '../components/CroppedImage'
@@ -65,7 +66,7 @@ export default function Join() {
   const prev = q && answered[q.id]
 
   return (
-    <Shell title={state.title}>
+    <Shell title={state.title} logo={state.logo_url ?? null}>
       {!q ? (
         <div className="waiting"><div className="bounce">⏳</div><p className="muted">Gleich geht’s los …</p></div>
       ) : prev && !editing ? (
@@ -83,12 +84,14 @@ export default function Join() {
   )
 }
 
-function Shell({ title, children }) {
+function Shell({ title, logo, children }) {
+  const fallback = useLogoUrl(null)
   return (
     <div className="student">
       <div className="row" style={{ marginBottom: 12 }}><Logo /><b className="grow">{title || 'Klassenpuls'}</b></div>
       {title && <NameBar />}
       {children}
+      <CornerLogo url={logo !== undefined ? logo : fallback} />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase, errorText, invokeFunction, appBaseUrl } from '../supabase'
+import LogoAdmin from '../components/LogoAdmin'
 
 export default function Admin({ auth }) {
   const [domains, setDomains] = useState([])
@@ -121,6 +122,8 @@ export default function Admin({ auth }) {
           </table>
         </div>
       </div>
+
+      <LogoAdmin />
 
       <div className="card stack">
         <h3>Selbstregistrierung: zugelassene E-Mail-Domains</h3>
