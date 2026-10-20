@@ -54,6 +54,20 @@ einen eigenen Stil bekommen. Reihenfolge: Stil der Umfrage → Stil des Lehrers 
 Lehrerseiten nutzen den Stil des Lehrers, Beamer und Schülerhandys den Stil der Umfrage, Startseite und Login den Schulstandard.
 Die Paletten stehen zentral in `src/themes.js`.
 
+## PowerPoint-Add-in
+
+Fragen und Live-Ergebnisse direkt auf PowerPoint-Folien (PowerPoint für Windows / Microsoft 365 und
+PowerPoint im Browser). Eine Folie = eine Frage; beim Folienwechsel in der Bildschirmpräsentation schaltet
+die Abstimmung automatisch mit. Beim ersten Klassenpuls-Folie startet automatisch ein Durchlauf.
+
+- Manifest: `public/powerpoint/klassenpuls-manifest.xml` (Download auch unter *Einstellungen* in der App).
+  In PowerPoint: *Einfügen → Add-ins → Meine Add-ins → Mein Add-in hochladen*.
+- Code: `office.html` und `src/office/`. Ohne PowerPoint lässt sich die Oberfläche im Browser testen:
+  `office.html` (Bearbeiten-Ansicht) bzw. `office.html?view=read&slide=…` (simulierte Präsentation).
+- Das Manifest enthält die feste Adresse `https://pingun.github.io/Klassenpuls/`. Zieht die App um,
+  müssen die Adressen im Manifest angepasst und das Add-in neu hochgeladen werden.
+- Anmeldung im Add-in per E-Mail und Passwort (Microsoft-Anmeldung dort noch nicht).
+
 ## Rollen & Lehrer verwalten
 
 - Die **erste** registrierte Person wird automatisch Admin.

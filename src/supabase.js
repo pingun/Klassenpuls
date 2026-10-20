@@ -11,7 +11,8 @@ export const supabase = createClient(
 export function appBaseUrl() {
   const configured = import.meta.env.VITE_PUBLIC_URL
   if (configured) return configured.endsWith('/') ? configured : configured + '/'
-  return window.location.origin + window.location.pathname
+  // ohne Dateinamen (z. B. office.html des PowerPoint-Add-ins), damit Links immer auf die App zeigen
+  return window.location.origin + window.location.pathname.replace(/[^/]*\.html$/, '')
 }
 
 export function joinUrl(code) {

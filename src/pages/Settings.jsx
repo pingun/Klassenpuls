@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase, errorText } from '../supabase'
+import { supabase, errorText, appBaseUrl } from '../supabase'
 import { notifyLogoChanged } from '../components/CornerLogo'
 import ThemePreview from '../components/ThemePreview'
 import { THEMES, DEFAULT_THEME, themeByKey, useSchoolTheme } from '../themes'
@@ -66,6 +66,8 @@ export default function Settings({ auth }) {
       </div>
 
       <ThemeCard auth={auth} />
+
+      <PowerPointCard />
 
       <PasswordCard />
     </div>
@@ -135,6 +137,29 @@ function ThemeCard({ auth }) {
           </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+function PowerPointCard() {
+  const manifest = `${appBaseUrl()}powerpoint/klassenpuls-manifest.xml`
+  return (
+    <div className="card stack">
+      <h3 style={{ margin: 0 }}>Klassenpuls in PowerPoint</h3>
+      <p className="muted small" style={{ margin: 0 }}>
+        Mit dem PowerPoint-Add-in zeigst du Fragen und Live-Ergebnisse direkt auf deinen Folien.
+        Beim Folienwechsel in der Bildschirmpräsentation springt die Abstimmung automatisch zur Frage der Folie.
+        Funktioniert in PowerPoint für Windows (Microsoft 365) und in PowerPoint im Browser.
+      </p>
+      <a className="btn sky" style={{ width: 'fit-content' }} href={manifest} download="klassenpuls-manifest.xml">⬇ Add-in-Datei herunterladen</a>
+      <ol className="small" style={{ margin: 0, paddingLeft: 20, lineHeight: 1.6 }}>
+        <li><b>Einmalig einrichten:</b> In PowerPoint <i>Einfügen → Add-ins → Meine Add-ins → Mein Add-in hochladen</i> und die heruntergeladene Datei wählen.
+          (Im Browser: <i>Einfügen → Add-ins → Mein Add-in hochladen</i>.)</li>
+        <li><b>Folie anlegen:</b> Auf einer Folie über <i>Einfügen → Add-ins</i> „Klassenpuls“ einfügen, einmal anmelden, Umfrage und Frage wählen. Den Rahmen auf die gewünschte Größe ziehen.</li>
+        <li><b>Weitere Fragen:</b> Folie duplizieren und über „⚙ Ändern“ die nächste Frage wählen.</li>
+        <li><b>Präsentieren:</b> Bildschirmpräsentation starten. Beim ersten Klassenpuls-Folie startet automatisch ein Durchlauf (falls noch keiner läuft). Beenden kannst du ihn wie gewohnt unter „Durchläufe &amp; Ergebnisse“.</li>
+      </ol>
+      <p className="muted small" style={{ margin: 0 }}>Hinweis: Im Add-in ist die Anmeldung per E-Mail und Passwort möglich, noch nicht per Microsoft.</p>
     </div>
   )
 }

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Klassenpuls – PowerPoint-Inhalts-Add-in. Diese Datei in PowerPoint hochladen:
+     Einfügen → Add-ins → Meine Add-ins → Mein Add-in hochladen -->
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:type="ContentApp">
+  <Id>3693e625-8015-4be0-838a-e80f8830fec8</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Klassenpuls</ProviderName>
+  <DefaultLocale>de-DE</DefaultLocale>
+  <DisplayName DefaultValue="Klassenpuls" />
+  <Description DefaultValue="Live-Abstimmungen aus Klassenpuls direkt auf der Folie – mit Code, QR-Code und Live-Ergebnissen." />
+  <IconUrl DefaultValue="https://pingun.github.io/Klassenpuls/powerpoint/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://pingun.github.io/Klassenpuls/powerpoint/icon-64.png" />
+  <SupportUrl DefaultValue="https://pingun.github.io/Klassenpuls/" />
+  <AppDomains>
+    <AppDomain>https://pingun.github.io</AppDomain>
+    <AppDomain>https://snxhqzdepgoczkmkrjyx.supabase.co</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Presentation" />
+  </Hosts>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://pingun.github.io/Klassenpuls/office.html" />
+    <RequestedWidth>960</RequestedWidth>
+    <RequestedHeight>540</RequestedHeight>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+  <AllowSnapshot>true</AllowSnapshot>
+</OfficeApp>

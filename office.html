@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Klassenpuls für PowerPoint</title>
+    <!-- office.js überschreibt history.pushState/replaceState; vorher sichern und danach wiederherstellen -->
+    <script>window.__kpHistory = { push: history.pushState, replace: history.replaceState }</script>
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <script>if (window.__kpHistory) { history.pushState = window.__kpHistory.push; history.replaceState = window.__kpHistory.replace }</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body class="office">
+    <div id="root"></div>
+    <script type="module" src="/src/office/main.jsx"></script>
+  </body>
+</html>
