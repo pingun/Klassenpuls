@@ -26,7 +26,7 @@ export default function Present({ auth }) {
   const [qaVotes, setQaVotes] = useState([])
   const [qaId, setQaId] = useState(null) // gerade gezeigte Q&A-Frage (bleibt beim Umsortieren stehen)
   const [moderating, setModerating] = useState(false)
-  const [undoStack, setUndoStack] = useState([]) // zuletzt als beantwortet markierte Fragen
+  const [undoStack, setUndoStack] = useState([]) // zuletzt beantwortet/gelöscht: [{ id, field }]
   useTheme(pollTheme || auth?.profile?.theme)
 
   // Laden
@@ -66,7 +66,7 @@ export default function Present({ auth }) {
   // Q&A: eingereichte Fragen und Daumen (Realtime + Fallback-Polling)
   const loadQa = useCallback(async () => {
     const [{ data: rows }, { data: votes }] = await Promise.all([
-      supabase.from('qa_questions').select('id, question_id, text, approved, answered, created_at').eq('session_id', sessionId),
+      supabase.from('qa_questions').select('id, question_id, text, approved, answered, created_at').eq('session_id', sessionId).eq('deleted', false),
       supabase.from('qa_votes').select('qa_question_id').eq('session_id', sessionId),
     ])
     if (rows) setQaRows(rows)
@@ -134,22 +134,26 @@ export default function Present({ auth }) {
     if (error) return setErr(errorText(error))
     loadQa(); notify()
   }
-  async function setAnswered(id, answered) {
+  // field = 'answered' (beantwortet) oder 'deleted' (gelöscht – der Fragesteller ist dann für diese Runde gesperrt)
+  async function setQaFlag(id, field, value) {
     setErr('')
-    setQaRows((rows) => rows.map((r) => (r.id === id ? { ...r, answered } : r)))
-    const { error } = await supabase.from('qa_questions').update({ answered }).eq('id', id)
+    setQaRows((rows) => (field === 'deleted' && value ? rows.filter((r) => r.id !== id) : rows.map((r) => (r.id === id ? { ...r, [field]: value } : r))))
+    const { error } = await supabase.from('qa_questions').update({ [field]: value }).eq('id', id)
     if (error) { setErr(errorText(error)); loadQa(); return false }
-    notify()
+    if (field === 'deleted' && !value) loadQa()
+    notify() // Schülergeräte sofort aktualisieren
     return true
   }
-  async function answer(it) {
+  async function markQa(it, field) {
     const i = qaItems.findIndex((r) => r.id === it.id)
     const next = qaItems[i + 1] || qaItems[i - 1]
-    if (await setAnswered(it.id, true)) { setUndoStack((u) => [...u, it.id]); setQaId(next?.id ?? null) }
+    if (await setQaFlag(it.id, field, true)) { setUndoStack((u) => [...u, { id: it.id, field }]); setQaId(next?.id ?? null) }
   }
-  async function undoAnswer() {
-    const id = undoStack[undoStack.length - 1]
-    if (id && await setAnswered(id, false)) { setUndoStack((u) => u.slice(0, -1)); setQaId(id) }
+  const answer = (it) => markQa(it, 'answered')
+  const removeQa = (it) => markQa(it, 'deleted')
+  async function undoQa() {
+    const last = undoStack[undoStack.length - 1]
+    if (last && await setQaFlag(last.id, last.field, false)) { setUndoStack((u) => u.slice(0, -1)); setQaId(last.id) }
   }
   const go = (d) => {
     const n = Math.min(Math.max(idx + d, 0), questions.length - 1)
@@ -176,6 +180,7 @@ export default function Present({ auth }) {
     else if (qaVisible && e.key === 'ArrowDown') { e.preventDefault(); setQaIndex(Math.min(qaIndex + 1, qaItems.length - 1)) }
     else if (qaVisible && e.key === 'ArrowUp') { e.preventDefault(); setQaIndex(Math.max(qaIndex - 1, 0)) }
     else if (qaVisible && e.key === 'Enter' && !moderating) { e.preventDefault(); if (qaItems[qaIndex]) answer(qaItems[qaIndex]) }
+    else if (qaVisible && e.key === 'Delete' && !moderating) { e.preventDefault(); if (qaItems[qaIndex]) removeQa(qaItems[qaIndex]) }
     else if (e.key === 'r') toggleResults()
     else if (e.key === 'f') fullscreen()
     else if (e.key === 'q') setBigQr((v) => !v)
@@ -220,8 +225,8 @@ export default function Present({ auth }) {
             <div className="muted small present-type">{QUESTION_TYPES[q.type].icon} {QUESTION_TYPES[q.type].label}</div>
             <h1>{q.prompt}</h1>
             {isQa && (session.show_results || !live)
-              ? <QaStage items={qaItems} index={qaIndex} onIndex={setQaIndex} onAnswer={live ? answer : undefined}
-                  onUndo={undoStack.length ? undoAnswer : undefined} answered={qaAnswered} showVotes={q.settings?.voting !== false} />
+              ? <QaStage items={qaItems} index={qaIndex} onIndex={setQaIndex} onAnswer={live ? answer : undefined} onDelete={live ? removeQa : undefined}
+                  onUndo={undoStack.length ? undoQa : undefined} answered={qaAnswered} showVotes={q.settings?.voting !== false} />
               : session.show_results || !live
                 ? <Results question={q} answers={answers} />
                 : <div className="empty-results"><div className="bounce">🙈</div><div>Ergebnisse sind verborgen – {isQa ? `${qaItems.length} Frage${qaItems.length === 1 ? '' : 'n'}` : `${answers.length} Antwort${answers.length === 1 ? '' : 'en'}`} eingegangen</div></div>}

@@ -253,13 +253,13 @@ function MatrixResults({ q, answers }) {
 
 // Q&A am Beamer: eine offene Frage groß, daneben ▲▼ zum Blättern, darunter „Frage x von y“, Daumen und
 // der Hinweis auf die Eingabetaste. items = offene (nicht beantwortete) Fragen, bereits sortiert.
-export function QaStage({ items, index, onIndex, onAnswer, onUndo, answered = 0, big = true, showVotes = true }) {
+export function QaStage({ items, index, onIndex, onAnswer, onDelete, onUndo, answered = 0, big = true, showVotes = true }) {
   if (!items.length) {
     return (
       <div className={`qa-empty ${big ? 'big' : ''}`}>
         <div className="qa-empty-title">{answered ? 'Alle Fragen sind beantwortet!' : 'Keine Fragen aus dem Publikum!'}</div>
         <div>Eingehende Fragen werden hier angezeigt, sodass Sie sie nacheinander beantworten können.</div>
-        {onUndo && <button className="btn ghost small" style={{ margin: '14px auto 0' }} onClick={onUndo}>↶ Zuletzt beantwortete zurückholen</button>}
+        {onUndo && <button className="btn ghost small" style={{ margin: '14px auto 0' }} onClick={onUndo}>↶ Rückgängig</button>}
       </div>
     )
   }
@@ -285,7 +285,8 @@ export function QaStage({ items, index, onIndex, onAnswer, onUndo, answered = 0,
       {onAnswer && (
         <div className="qa-hint">
           <button onClick={() => onAnswer(it)}>Eingabetaste ⏎ drücken, um die Frage als beantwortet zu markieren</button>
-          {onUndo && <> · <button onClick={onUndo}>↶ zurückholen</button></>}
+          {onDelete && <> · <button onClick={() => onDelete(it)}>Entf drücken, um die Frage zu löschen</button></>}
+          {onUndo && <> · <button onClick={onUndo}>↶ Rückgängig</button></>}
         </div>
       )}
     </div>

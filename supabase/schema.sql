@@ -638,3 +638,20 @@ begin
     ) x
   ), '[]'::jsonb);
 end $$;
+
+-- ============ Q&A: Fragen löschen ============
+-- Migration "qa_loeschen": gelöschte Fragen bleiben als deleted = true stehen, damit der Fragesteller gesperrt werden kann.
+-- submit_qa_question lehnt gesperrte Teilnehmer ab, toggle_qa_vote und get_qa_questions ignorieren gelöschte Fragen
+-- (vollständige Fassungen siehe Migration). Neu: get_qa_state = { questions: get_qa_questions(...), blocked: bool }
+alter table public.qa_questions add column deleted boolean not null default false;
+
+create or replace function public.get_qa_state(p_code text, p_question_id uuid, p_participant uuid)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare a record;
+begin
+  select * into a from public.qa_active(p_code, p_question_id);
+  return jsonb_build_object(
+    'questions', public.get_qa_questions(p_code, p_question_id, p_participant),
+    'blocked', exists (select 1 from public.qa_questions where session_id = (a.s).id and question_id = (a.q).id and participant_id = p_participant and deleted));
+end $$;
+grant execute on function public.get_qa_state(text, uuid, uuid) to anon, authenticated;
