@@ -181,7 +181,7 @@ function QaParticipant({ q, code, tick }) {
           </div>
         </div>
       ) : (
-        <button className="btn big" style={{ width: '100%', justifyContent: 'center' }} onClick={() => { setWriting(true); setSent(false) }}>Neue Frage stellen</button>
+        <button className="btn big" style={{ width: '100%', justifyContent: 'center' }} onClick={() => { setWriting(true); setSent(false) }}>Frage stellen</button>
       )}
       {sent && !writing && <div className="alert ok">Danke! Ihre Frage wurde eingereicht.{moderated ? ' Sie erscheint, sobald sie freigegeben wurde.' : ''}</div>}
       {err && <div className="alert">{err}</div>}
