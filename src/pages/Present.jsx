@@ -26,6 +26,7 @@ export default function Present({ auth }) {
   const [qaVotes, setQaVotes] = useState([])
   const [qaId, setQaId] = useState(null) // gerade gezeigte Q&A-Frage (bleibt beim Umsortieren stehen)
   const [moderating, setModerating] = useState(false)
+  const [undoStack, setUndoStack] = useState([]) // zuletzt als beantwortet markierte Fragen
   useTheme(pollTheme || auth?.profile?.theme)
 
   // Laden
@@ -65,7 +66,7 @@ export default function Present({ auth }) {
   // Q&A: eingereichte Fragen und Daumen (Realtime + Fallback-Polling)
   const loadQa = useCallback(async () => {
     const [{ data: rows }, { data: votes }] = await Promise.all([
-      supabase.from('qa_questions').select('id, question_id, text, approved, created_at').eq('session_id', sessionId),
+      supabase.from('qa_questions').select('id, question_id, text, approved, answered, created_at').eq('session_id', sessionId),
       supabase.from('qa_votes').select('qa_question_id').eq('session_id', sessionId),
     ])
     if (rows) setQaRows(rows)
@@ -112,15 +113,16 @@ export default function Present({ auth }) {
   const idx = session?.current_index ?? 0
   const q = questions[idx]
   const isQa = q?.type === 'qa'
-  // freigegebene Fragen, meiste Daumen zuerst, bei Gleichstand die ältere
+  // offene freigegebene Fragen, meiste Daumen zuerst, bei Gleichstand die ältere
   const qaItems = useMemo(() => {
     if (!isQa) return []
     const n = new Map()
     qaVotes.forEach((v) => n.set(v.qa_question_id, (n.get(v.qa_question_id) || 0) + 1))
-    return qaRows.filter((r) => r.question_id === q.id && r.approved)
+    return qaRows.filter((r) => r.question_id === q.id && r.approved && !r.answered)
       .map((r) => ({ ...r, votes: n.get(r.id) || 0 }))
       .sort((a, b) => b.votes - a.votes || a.created_at.localeCompare(b.created_at))
   }, [isQa, q, qaRows, qaVotes])
+  const qaAnswered = isQa ? qaRows.filter((r) => r.question_id === q.id && r.answered).length : 0
   const qaPending = useMemo(() => (isQa ? qaRows.filter((r) => r.question_id === q.id && !r.approved).sort((a, b) => a.created_at.localeCompare(b.created_at)) : []), [isQa, q, qaRows])
   const qaIndex = Math.max(0, qaItems.findIndex((r) => r.id === qaId))
   const setQaIndex = (i) => setQaId(qaItems[i]?.id ?? null)
@@ -132,18 +134,28 @@ export default function Present({ auth }) {
     if (error) return setErr(errorText(error))
     loadQa(); notify()
   }
+  async function setAnswered(id, answered) {
+    setErr('')
+    setQaRows((rows) => rows.map((r) => (r.id === id ? { ...r, answered } : r)))
+    const { error } = await supabase.from('qa_questions').update({ answered }).eq('id', id)
+    if (error) { setErr(errorText(error)); loadQa(); return false }
+    notify()
+    return true
+  }
+  async function answer(it) {
+    const i = qaItems.findIndex((r) => r.id === it.id)
+    const next = qaItems[i + 1] || qaItems[i - 1]
+    if (await setAnswered(it.id, true)) { setUndoStack((u) => [...u, it.id]); setQaId(next?.id ?? null) }
+  }
+  async function undoAnswer() {
+    const id = undoStack[undoStack.length - 1]
+    if (id && await setAnswered(id, false)) { setUndoStack((u) => u.slice(0, -1)); setQaId(id) }
+  }
   const go = (d) => {
     const n = Math.min(Math.max(idx + d, 0), questions.length - 1)
-    if (n !== idx) { setQaId(null); setModerating(false); patch({ current_index: n }) }
+    if (n !== idx) { setQaId(null); setUndoStack([]); setModerating(false); patch({ current_index: n }) }
   }
-  // Bei Q&A blättern Pfeiltasten/Fernbedienung zuerst durch die eingereichten Fragen
-  const step = (d) => {
-    if (isQa && (session.show_results || !live) && qaItems.length) {
-      const n = qaIndex + d
-      if (n >= 0 && n < qaItems.length) return setQaIndex(n)
-    }
-    go(d)
-  }
+  const qaVisible = isQa && (session?.show_results || !live)
   const toggleResults = () => patch({ show_results: !session.show_results })
   async function reopen() {
     setErr('')
@@ -158,8 +170,12 @@ export default function Present({ auth }) {
   const keyRef = useRef()
   keyRef.current = (e) => {
     if (!session || e.target.closest?.('input, textarea')) return
-    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); step(1) }
-    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); step(-1) }
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); go(1) }
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); go(-1) }
+    // Q&A: ↑/↓ blättern durch die offenen Fragen, Eingabetaste markiert die gezeigte als beantwortet
+    else if (qaVisible && e.key === 'ArrowDown') { e.preventDefault(); setQaIndex(Math.min(qaIndex + 1, qaItems.length - 1)) }
+    else if (qaVisible && e.key === 'ArrowUp') { e.preventDefault(); setQaIndex(Math.max(qaIndex - 1, 0)) }
+    else if (qaVisible && e.key === 'Enter' && !moderating) { e.preventDefault(); if (qaItems[qaIndex]) answer(qaItems[qaIndex]) }
     else if (e.key === 'r') toggleResults()
     else if (e.key === 'f') fullscreen()
     else if (e.key === 'q') setBigQr((v) => !v)
@@ -204,7 +220,8 @@ export default function Present({ auth }) {
             <div className="muted small present-type">{QUESTION_TYPES[q.type].icon} {QUESTION_TYPES[q.type].label}</div>
             <h1>{q.prompt}</h1>
             {isQa && (session.show_results || !live)
-              ? <QaStage items={qaItems} index={qaIndex} onIndex={setQaIndex} showVotes={q.settings?.voting !== false} />
+              ? <QaStage items={qaItems} index={qaIndex} onIndex={setQaIndex} onAnswer={live ? answer : undefined}
+                  onUndo={undoStack.length ? undoAnswer : undefined} answered={qaAnswered} showVotes={q.settings?.voting !== false} />
               : session.show_results || !live
                 ? <Results question={q} answers={answers} />
                 : <div className="empty-results"><div className="bounce">🙈</div><div>Ergebnisse sind verborgen – {isQa ? `${qaItems.length} Frage${qaItems.length === 1 ? '' : 'n'}` : `${answers.length} Antwort${answers.length === 1 ? '' : 'en'}`} eingegangen</div></div>}

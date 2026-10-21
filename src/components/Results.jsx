@@ -251,43 +251,64 @@ function MatrixResults({ q, answers }) {
   )
 }
 
-// Q&A: eine Frage pro Ansicht, darunter „Frage x von y“ und die Daumen.
-// items: [{ id, text, votes }] – bereits sortiert; mit onIndex wird gewischt, mit onVote abgestimmt.
-export function QaStage({ items, index, onIndex, onVote, big = true, showVotes = true }) {
-  const start = useRef(null)
+// Q&A am Beamer: eine offene Frage groß, daneben ▲▼ zum Blättern, darunter „Frage x von y“, Daumen und
+// der Hinweis auf die Eingabetaste. items = offene (nicht beantwortete) Fragen, bereits sortiert.
+export function QaStage({ items, index, onIndex, onAnswer, onUndo, answered = 0, big = true, showVotes = true }) {
   if (!items.length) {
     return (
       <div className={`qa-empty ${big ? 'big' : ''}`}>
-        <div className="qa-empty-title">Keine Fragen aus dem Publikum!</div>
+        <div className="qa-empty-title">{answered ? 'Alle Fragen sind beantwortet!' : 'Keine Fragen aus dem Publikum!'}</div>
         <div>Eingehende Fragen werden hier angezeigt, sodass Sie sie nacheinander beantworten können.</div>
+        {onUndo && <button className="btn ghost small" style={{ margin: '14px auto 0' }} onClick={onUndo}>↶ Zuletzt beantwortete zurückholen</button>}
       </div>
     )
   }
   const i = Math.min(Math.max(index, 0), items.length - 1)
   const it = items[i]
   const go = (d) => onIndex && onIndex(Math.min(Math.max(i + d, 0), items.length - 1))
-  const touch = {
-    onTouchStart: (e) => { start.current = e.touches[0].clientX },
-    onTouchEnd: (e) => {
-      if (start.current == null) return
-      const dx = e.changedTouches[0].clientX - start.current
-      start.current = null
-      if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1)
-    },
-  }
   return (
-    <div className={`qa-stage ${big ? 'big' : ''}`} {...touch}>
+    <div className={`qa-stage ${big ? 'big' : ''}`}>
       <div className="qa-row">
-        {onIndex && <button className="btn ghost icon qa-nav" onClick={() => go(-1)} disabled={i === 0} aria-label="Vorherige Frage">‹</button>}
         <div className="qa-card" key={it.id}>{it.text}</div>
-        {onIndex && <button className="btn ghost icon qa-nav" onClick={() => go(1)} disabled={i === items.length - 1} aria-label="Nächste Frage">›</button>}
+        {onIndex && items.length > 1 && (
+          <div className="qa-arrows">
+            <button className="btn ghost icon small" onClick={() => go(-1)} disabled={i === 0} aria-label="Vorherige Frage" title="Vorherige Frage (↑)">▲</button>
+            <button className="btn ghost icon small" onClick={() => go(1)} disabled={i === items.length - 1} aria-label="Nächste Frage" title="Nächste Frage (↓)">▼</button>
+          </div>
+        )}
       </div>
       <div className="qa-meta">
         <span>Frage {i + 1} von {items.length}</span>
-        {showVotes && (onVote
-          ? <button className={`qa-thumb ${it.voted ? 'on' : ''}`} onClick={() => onVote(it)} aria-pressed={!!it.voted} title={it.voted ? 'Daumen zurücknehmen' : 'Daumen hoch'}>👍 {it.votes}</button>
-          : <span className="qa-thumb">👍 {it.votes}</span>)}
+        {showVotes && <span className="qa-thumb">👍 {it.votes}</span>}
+        {answered > 0 && <span>{answered} beantwortet</span>}
       </div>
+      {onAnswer && (
+        <div className="qa-hint">
+          <button onClick={() => onAnswer(it)}>Eingabetaste ⏎ drücken, um die Frage als beantwortet zu markieren</button>
+          {onUndo && <> · <button onClick={onUndo}>↶ zurückholen</button></>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Q&A bei den Schülern: alle Fragen untereinander, je mit Daumen hoch; beantwortete ausgegraut am Ende
+export function QaList({ items, onVote, showVotes = true }) {
+  return (
+    <div className="qa-list">
+      {items.map((it) => (
+        <div key={it.id} className={`qa-item ${it.answered ? 'answered' : ''}`}>
+          <div className="grow">
+            {it.text}
+            {it.answered && <span className="pill" style={{ marginLeft: 8 }}>✓ beantwortet</span>}
+            {!it.approved && <span className="pill" style={{ marginLeft: 8 }}>wartet auf Freigabe</span>}
+          </div>
+          {showVotes && it.approved && (
+            <button className={`qa-thumb ${it.voted ? 'on' : ''}`} onClick={() => onVote(it)} disabled={it.answered}
+              aria-pressed={!!it.voted} title={it.voted ? 'Daumen zurücknehmen' : 'Daumen hoch'}>👍 {it.votes}</button>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

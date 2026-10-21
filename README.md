@@ -76,7 +76,7 @@ Die Paletten stehen zentral in `src/themes.js`.
 → / Leertaste / PageDown = nächste Frage · ← / PageUp = zurück (funktioniert mit Presenter-Fernbedienungen)
 R = Ergebnisse ein/aus · Q = QR-Code groß · F = Vollbild
 
-Bei **Q&A** blättern die Pfeiltasten zuerst durch die eingereichten Fragen (meiste Daumen zuerst), nach der letzten geht es zur nächsten Frage der Umfrage. Ist „Eingereichte Fragen moderieren“ an, erscheinen neue Fragen erst nach Freigabe über „⏳ zur Freigabe“ in der Fußleiste.
+Bei **Q&A** zeigt der Beamer eine offene Frage nach der anderen (meiste Daumen zuerst). ↑ / ↓ blättern durch die Fragen, die **Eingabetaste** markiert die gezeigte Frage als beantwortet (rückgängig über „↶ zurückholen“). Die Schüler sehen alle Fragen untereinander und können bei jeder einen Daumen hoch setzen; beantwortete stehen ausgegraut am Ende. Ist „Eingereichte Fragen moderieren“ an, erscheinen neue Fragen erst nach Freigabe über „⏳ zur Freigabe“ in der Fußleiste.
 
 Jeder Start einer Umfrage ist ein eigener **Durchlauf** (z. B. „8b“, „9a“) mit eigenem Code –
 die Ergebnisse bleiben getrennt und sind unter „Durchläufe & Ergebnisse“ jederzeit abrufbar.

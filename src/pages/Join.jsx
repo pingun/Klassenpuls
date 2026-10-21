@@ -4,7 +4,7 @@ import { supabase, participantId, errorText, getParticipantName, setParticipantN
 import NameField from '../components/NameField'
 import CornerLogo, { useLogoUrl } from '../components/CornerLogo'
 import { useTheme, inkOn } from '../themes'
-import { pastel, QaStage } from '../components/Results'
+import { pastel, QaList } from '../components/Results'
 import Logo from '../components/Logo'
 import CroppedImage from '../components/CroppedImage'
 import { nameUsage, QUESTION_TYPES } from '../questionTypes'
@@ -123,13 +123,11 @@ function Outdated({ type }) {
   )
 }
 
-// Q&A: eigene Fragen einreichen, fremde Fragen durchwischen und mit Daumen hoch bewerten
+// Q&A: eigene Fragen einreichen, alle Fragen untereinander sehen und mit Daumen hoch bewerten
 function QaParticipant({ q, code, tick }) {
   const voting = q.settings?.voting !== false
   const moderated = !!q.settings?.moderate
   const [list, setList] = useState([])
-  const [index, setIndex] = useState(0)
-  const [currentId, setCurrentId] = useState(null)
   const [writing, setWriting] = useState(false)
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -142,12 +140,9 @@ function QaParticipant({ q, code, tick }) {
   }, [code, q.id])
   useEffect(() => { load() }, [load, tick]) // tick = jeder Live-Abgleich (alle 4 s und bei Freigaben)
 
-  const visible = voting ? list.filter((x) => x.approved) : []
-  const mine = list.filter((x) => x.mine && (!voting || !x.approved))
-  // beim Umsortieren auf derselben Frage bleiben
-  const found = visible.findIndex((x) => x.id === currentId)
-  const i = found >= 0 ? found : Math.min(index, Math.max(visible.length - 1, 0))
-  const pick = (n) => { setIndex(n); setCurrentId(visible[n]?.id ?? null) }
+  // Server liefert: freigegebene Fragen (wenn Bewerten an) + eigene; offene vor beantworteten, meiste Daumen zuerst
+  const visible = voting ? list : []
+  const mine = voting ? [] : list
 
   async function send() {
     setBusy(true); setErr('')
@@ -159,7 +154,6 @@ function QaParticipant({ q, code, tick }) {
   async function vote(it) {
     setErr('')
     setList((l) => l.map((x) => (x.id === it.id ? { ...x, voted: !x.voted, votes: x.votes + (x.voted ? -1 : 1) } : x)))
-    setCurrentId(it.id)
     const { error } = await supabase.rpc('toggle_qa_vote', { p_code: code, p_question_id: q.id, p_participant: participantId(), p_qa: it.id })
     if (error) setErr(errorText(error))
     load()
@@ -185,13 +179,11 @@ function QaParticipant({ q, code, tick }) {
       )}
       {sent && !writing && <div className="alert ok">Danke! Ihre Frage wurde eingereicht.{moderated ? ' Sie erscheint, sobald sie freigegeben wurde.' : ''}</div>}
       {err && <div className="alert">{err}</div>}
-      {visible.length > 0 && <QaStage items={visible} index={i} onIndex={pick} onVote={vote} big={false} />}
+      {visible.length > 0 && <QaList items={visible} onVote={vote} />}
       {mine.length > 0 && (
-        <div className="qa-mine">
-          <b>Ihre Fragen</b>
-          <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
-            {mine.map((x) => <li key={x.id}>{x.text} {!x.approved && <span className="pill">wartet auf Freigabe</span>}</li>)}
-          </ul>
+        <div className="stack" style={{ gap: 8 }}>
+          <b className="small">Ihre Fragen</b>
+          <QaList items={mine} showVotes={false} />
         </div>
       )}
     </div>

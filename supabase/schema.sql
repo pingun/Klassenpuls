@@ -614,3 +614,27 @@ grant execute on function public.get_qa_questions(text, uuid, uuid) to anon, aut
 
 alter publication supabase_realtime add table public.qa_questions;
 alter publication supabase_realtime add table public.qa_votes;
+
+-- ============ Q&A: Fragen als beantwortet markieren ============
+-- Migration "qa_beantwortet"; get_qa_questions liefert zusätzlich 'answered' und sortiert offene vor beantworteten
+alter table public.qa_questions add column answered boolean not null default false;
+
+create or replace function public.get_qa_questions(p_code text, p_question_id uuid, p_participant uuid)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare a record; voting boolean;
+begin
+  select * into a from public.qa_active(p_code, p_question_id);
+  voting := coalesce(((a.q).settings->>'voting')::boolean, true);
+  return coalesce((
+    select jsonb_agg(jsonb_build_object('id', x.id, 'text', x.text, 'approved', x.approved, 'answered', x.answered,
+      'mine', x.participant_id = p_participant, 'votes', x.votes, 'voted', x.voted) order by x.answered, x.votes desc, x.created_at)
+    from (
+      select qq.id, qq.text, qq.approved, qq.answered, qq.participant_id, qq.created_at,
+        (select count(*) from public.qa_votes v where v.qa_question_id = qq.id)::int as votes,
+        exists (select 1 from public.qa_votes v where v.qa_question_id = qq.id and v.participant_id = p_participant) as voted
+      from public.qa_questions qq
+      where qq.session_id = (a.s).id and qq.question_id = (a.q).id
+        and ((voting and qq.approved) or qq.participant_id = p_participant)
+    ) x
+  ), '[]'::jsonb);
+end $$;
