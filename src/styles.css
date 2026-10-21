@@ -361,3 +361,19 @@ button.logo-tile:hover { border-color: var(--brand-tint); }
 .q-card.t-matrix { border-left-color: var(--s4); }
 .matrix-name { min-width: 0; overflow-wrap: break-word; hyphens: auto; }
 .btn.small.matrix-skip { flex: none; padding: 4px 10px; font-size: .8rem; }
+
+/* 4-Felder: Einzelbewertungen beim Darüberfahren */
+.matrix-point { cursor: pointer; z-index: 2; transition: left .6s cubic-bezier(.2,.8,.2,1), bottom .6s cubic-bezier(.2,.8,.2,1), opacity .2s, transform .2s; }
+.matrix-point.faded { opacity: 0; pointer-events: none; }
+.matrix-point.active { transform: translate(-50%, 50%) scale(1.15); z-index: 3; }
+.matrix-vote {
+  position: absolute; width: var(--size, 10px); height: var(--size, 10px); transform: translate(-50%, 50%); border-radius: 50%;
+  opacity: .75; border: 1px solid var(--card); z-index: 1; pointer-events: auto;
+  display: grid; place-items: center; font-size: .6rem; font-weight: 700; color: #fff; animation: vote-in .25s ease;
+}
+@keyframes vote-in { from { opacity: 0 } to { opacity: .75 } }
+.matrix-legend li { cursor: default; transition: opacity .2s; }
+.matrix-legend li:not(.none) { cursor: pointer; }
+.matrix-legend li.faded { opacity: .35; }
+.matrix-legend li.active { font-weight: 800; }
+.matrix-avg { display: block; font-size: .8rem; font-weight: 600; color: var(--ink-soft); }

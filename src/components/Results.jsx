@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { inkOn } from '../themes'
 import CroppedImage from './CroppedImage'
 // helle Diagrammfarben des aktiven Stils (siehe src/themes.js)
@@ -172,36 +173,60 @@ function PinResults({ q, answers }) {
   )
 }
 
-// 4-Felder: Durchschnitt je Item als nummerierter Farbpunkt in der Matrix, rechts die Legende
+// 4-Felder: Mittelwert je Item als nummerierter Farbpunkt in der Matrix, rechts die Legende.
+// Maus auf einen Punkt (oder Legendeneintrag): nur dieser Punkt bleibt sichtbar, dazu seine Einzelbewertungen als kleine Punkte.
 function MatrixResults({ q, answers }) {
+  const [hover, setHover] = useState(null) // Item unter der Maus
+  const [pinned, setPinned] = useState(null) // per Klick/Tippen festgehalten (für Touch-Geräte)
+  const focus = hover ?? pinned
   const colors = q.settings?.colors || []
   const items = q.options.map((name, i) => {
     const rated = answers.map((a) => a.values?.[i]).filter((v) => Array.isArray(v))
     const n = rated.length
     const x = n ? rated.reduce((s, v) => s + v[0], 0) / n : null
     const y = n ? rated.reduce((s, v) => s + v[1], 0) / n : null
+    // gleiche Bewertungen zusammenfassen, damit man sieht, wie oft ein Wertepaar vorkam
+    const groups = new Map()
+    rated.forEach(([vx, vy]) => { const k = `${vx}|${vy}`; groups.set(k, { x: vx, y: vy, count: (groups.get(k)?.count || 0) + 1 }) })
     const color = colors[i] || '#4f6ad8'
-    return { i, name, n, x, y, color, ink: /^#[0-9a-f]{6}$/i.test(color) ? inkOn(color) : '#fff' }
+    return { i, name, n, x, y, votes: [...groups.values()], color, ink: /^#[0-9a-f]{6}$/i.test(color) ? inkOn(color) : '#fff' }
   })
   const pos = (v) => `${((v - 1) / 9) * 100}%`
+  const focused = focus != null ? items[focus] : null
+  const enter = (i) => setHover(i)
+  const leave = () => setHover(null)
+  const toggle = (i) => setPinned((p) => (p === i ? null : i))
+
   return (
     <div className="matrix-wrap">
       <div className="matrix-chart">
         <div className="matrix-ylabel"><span>{q.settings?.yLabel} →</span></div>
-        <div className="matrix-plot">
-          <div className="matrix-cells"><div /><div /><div /><div /></div>
+        <div className="matrix-plot" onMouseLeave={leave}>
+          <div className="matrix-cells" onClick={() => setPinned(null)}><div /><div /><div /><div /></div>
+          {focused?.votes.map((v) => (
+            <span key={`${v.x}|${v.y}`} className="matrix-vote" title={`${v.x} / ${v.y}${v.count > 1 ? ` (${v.count}×)` : ''}`}
+              style={{ left: pos(v.x), bottom: pos(v.y), background: focused.color, '--size': `${Math.min(13 + (v.count - 1) * 4, 28)}px` }}>
+              {v.count > 1 ? v.count : ''}
+            </span>
+          ))}
           {items.filter((it) => it.n).map((it) => (
-            <span key={it.i} className="matrix-point" title={`${it.name}: ${fmt(it.x)} / ${fmt(it.y)} (${it.n})`}
+            <span key={it.i} className={`matrix-point ${focus != null && focus !== it.i ? 'faded' : ''} ${focus === it.i ? 'active' : ''}`}
+              title={`${it.name}: Ø ${fmt(it.x)} / Ø ${fmt(it.y)} (${it.n} Bewertungen)`}
+              onMouseEnter={() => enter(it.i)} onClick={() => toggle(it.i)}
               style={{ left: pos(it.x), bottom: pos(it.y), background: it.color, color: it.ink }}>{it.i + 1}</span>
           ))}
         </div>
         <div className="matrix-xlabel">{q.settings?.xLabel} →</div>
       </div>
-      <ol className="matrix-legend">
+      <ol className="matrix-legend" onMouseLeave={leave}>
         {items.map((it) => (
-          <li key={it.i} className={it.n ? '' : 'none'}>
+          <li key={it.i} className={`${it.n ? '' : 'none'} ${focus != null && focus !== it.i ? 'faded' : ''} ${focus === it.i ? 'active' : ''}`}
+            onMouseEnter={() => it.n && enter(it.i)} onClick={() => it.n && toggle(it.i)}>
             <span className="matrix-dot" style={{ background: it.color, color: it.ink }}>{it.i + 1}</span>
-            <span className="grow">{it.name}</span>
+            <span className="grow">
+              {it.name}
+              {focus === it.i && <span className="matrix-avg">Ø {fmt(it.x)} · Ø {fmt(it.y)}</span>}
+            </span>
             <span className="muted small" title="Anzahl Bewertungen">{it.n || '–'}</span>
           </li>
         ))}
