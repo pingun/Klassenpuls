@@ -1,6 +1,9 @@
 // gezeichnete Zelle als Beispielbild für die Vorschau
 const SAMPLE_CELL = 'data:image/svg+xml;utf8,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='800' height='500' viewBox='0 0 800 500'><rect width='800' height='500' fill='#fbf7f2'/><ellipse cx='400' cy='250' rx='340' ry='210' fill='#f6e4c8' stroke='#c99b6b' stroke-width='6'/><ellipse cx='450' cy='240' rx='80' ry='70' fill='#d9b8d6' stroke='#8d5a8a' stroke-width='5'/><circle cx='465' cy='230' r='22' fill='#8d5a8a'/><ellipse cx='250' cy='310' rx='55' ry='24' fill='#c9ddb4' stroke='#6b7a10' stroke-width='4' transform='rotate(-20 250 310)'/><ellipse cx='590' cy='150' rx='45' ry='20' fill='#c9ddb4' stroke='#6b7a10' stroke-width='4' transform='rotate(25 590 150)'/><ellipse cx='300' cy='160' rx='40' ry='18' fill='#f4c7a8' stroke='#b35c1e' stroke-width='4'/><ellipse cx='560' cy='360' rx='38' ry='17' fill='#f4c7a8' stroke='#b35c1e' stroke-width='4' transform='rotate(-15 560 360)'/><g fill='#a9c4d9'><circle cx='200' cy='220' r='7'/><circle cx='340' cy='380' r='7'/><circle cx='650' cy='260' r='7'/><circle cx='380' cy='110' r='7'/><circle cx='480' cy='400' r='7'/></g></svg>")
 
+// Farbpalette für die Items des 4-Felder-Typs (neue Items bekommen reihum die nächste Farbe)
+export const MATRIX_COLORS = ['#4f6ad8', '#e8615a', '#2b3a73', '#8d86e0', '#a3333d', '#f2a19a', '#6a58c4', '#2f7f74', '#d9902f', '#5f6b7a', '#c2558f', '#7aa63a']
+
 export const QUESTION_TYPES = {
   multiple_choice: {
     label: 'Multiple Choice',
@@ -72,6 +75,23 @@ export const QUESTION_TYPES = {
     },
     optionLabel: null,
     defaults: () => ({ options: [], settings: { image_url: null, image_path: null } }),
+  },
+  matrix: {
+    label: '4-Felder',
+    icon: '▦',
+    hint: 'Items auf zwei Achsen einordnen (je 1–10).',
+    explain: 'Du legst Items fest und benennst die beiden Achsen, z. B. „Aufwand“ und „Wirkung“. Die Schüler bewerten jedes Item mit zwei Schiebereglern von 1 bis 10 und können Items überspringen. Am Beamer erscheint jedes Item als Farbpunkt an seiner Durchschnittsposition in einer Matrix aus vier Feldern. Ideal für Priorisierungen, Selbsteinschätzungen und Bewertungen.',
+    sample: {
+      prompt: 'Wie schätzt ihr die Methoden ein?',
+      options: ['Gruppenpuzzle', 'Stationenlernen', 'Lehrervortrag', 'Lernvideo', 'Projektarbeit'],
+      settings: { xLabel: 'Aufwand', yLabel: 'Lernwirkung', colors: ['#4f6ad8', '#e8615a', '#2b3a73', '#8d86e0', '#a3333d'] },
+      answers: [
+        [[6, 8], [5, 7], [2, 4], [3, 5], [9, 9]], [[7, 9], [6, 6], [2, 3], [2, 6], [8, 8]],
+        [[5, 7], null, [3, 4], [3, 4], [9, 7]], [[6, 8], [5, 8], [1, 5], null, [8, 9]],
+      ].map((values) => ({ values })),
+    },
+    optionLabel: null,
+    defaults: () => ({ options: ['', ''], settings: { xLabel: '', yLabel: '', colors: [MATRIX_COLORS[0], MATRIX_COLORS[1]] } }),
   },
 }
 

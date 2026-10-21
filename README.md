@@ -5,7 +5,7 @@ Version 0.8
 Liveabstimmung: Lehrkräfte erstellen wiederverwendbare Umfragen,
 Schüler machen per QR-Code ohne Konto mit, die Ergebnisse erscheinen live am Beamer.
 
-**Fragetypen:** Multiple Choice (Einzel/Mehrfach) · Ranking · Skala (Aussagen bewerten) · Offene Frage (Pinnwand oder Wortwolke) · Bild anheften (Pins auf ein hochgeladenes Bild)
+**Fragetypen:** Multiple Choice (Einzel/Mehrfach) · Ranking · Skala (Aussagen bewerten) · Offene Frage (Pinnwand oder Wortwolke) · Bild anheften (Pins auf ein hochgeladenes Bild) · 4-Felder (Items auf zwei Achsen 1–10 einordnen)
 **Vorlagen:** „Erwartungen der Schüler managen“ (6 Fragen) und „Feedback zur Stunde“
 
 # Verwendete Infrastruktur

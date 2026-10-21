@@ -1,3 +1,4 @@
+import { inkOn } from '../themes'
 import CroppedImage from './CroppedImage'
 // helle Diagrammfarben des aktiven Stils (siehe src/themes.js)
 export const PASTELS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)', 'var(--c7)', 'var(--c8)']
@@ -8,6 +9,7 @@ const fmt = (n, d = 1) => n.toLocaleString('de-DE', { minimumFractionDigits: d, 
 export default function Results({ question, answers }) {
   if (!question) return null
   if (question.type === 'pin') return <PinResults q={question} answers={answers} />
+  if (question.type === 'matrix') return <MatrixResults q={question} answers={answers} />
   if (!answers.length) {
     return <div className="empty-results"><div className="bounce">⏳</div><div>Noch keine Antworten – scannt den QR-Code!</div></div>
   }
@@ -166,6 +168,44 @@ function PinResults({ q, answers }) {
         {pins.map((a, i) => <span key={i} className="pin-dot" title={a._name || undefined} style={{ left: `${a.x * 100}%`, top: `${a.y * 100}%` }} />)}
       </CroppedImage>
       {!pins.length && <div className="muted" style={{ marginTop: 10, fontWeight: 600 }}>Noch keine Pins – scannt den QR-Code und tippt auf das Bild!</div>}
+    </div>
+  )
+}
+
+// 4-Felder: Durchschnitt je Item als nummerierter Farbpunkt in der Matrix, rechts die Legende
+function MatrixResults({ q, answers }) {
+  const colors = q.settings?.colors || []
+  const items = q.options.map((name, i) => {
+    const rated = answers.map((a) => a.values?.[i]).filter((v) => Array.isArray(v))
+    const n = rated.length
+    const x = n ? rated.reduce((s, v) => s + v[0], 0) / n : null
+    const y = n ? rated.reduce((s, v) => s + v[1], 0) / n : null
+    const color = colors[i] || '#4f6ad8'
+    return { i, name, n, x, y, color, ink: /^#[0-9a-f]{6}$/i.test(color) ? inkOn(color) : '#fff' }
+  })
+  const pos = (v) => `${((v - 1) / 9) * 100}%`
+  return (
+    <div className="matrix-wrap">
+      <div className="matrix-chart">
+        <div className="matrix-ylabel"><span>{q.settings?.yLabel} →</span></div>
+        <div className="matrix-plot">
+          <div className="matrix-cells"><div /><div /><div /><div /></div>
+          {items.filter((it) => it.n).map((it) => (
+            <span key={it.i} className="matrix-point" title={`${it.name}: ${fmt(it.x)} / ${fmt(it.y)} (${it.n})`}
+              style={{ left: pos(it.x), bottom: pos(it.y), background: it.color, color: it.ink }}>{it.i + 1}</span>
+          ))}
+        </div>
+        <div className="matrix-xlabel">{q.settings?.xLabel} →</div>
+      </div>
+      <ol className="matrix-legend">
+        {items.map((it) => (
+          <li key={it.i} className={it.n ? '' : 'none'}>
+            <span className="matrix-dot" style={{ background: it.color, color: it.ink }}>{it.i + 1}</span>
+            <span className="grow">{it.name}</span>
+            <span className="muted small" title="Anzahl Bewertungen">{it.n || '–'}</span>
+          </li>
+        ))}
+      </ol>
     </div>
   )
 }
