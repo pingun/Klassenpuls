@@ -7,7 +7,7 @@ import { useTheme, inkOn } from '../themes'
 import { pastel, QaStage } from '../components/Results'
 import Logo from '../components/Logo'
 import CroppedImage from '../components/CroppedImage'
-import { nameUsage } from '../questionTypes'
+import { nameUsage, QUESTION_TYPES } from '../questionTypes'
 
 const answeredKey = (sid) => `klassenpuls.answered.${sid}`
 function loadAnswered(sid) {
@@ -72,6 +72,8 @@ export default function Join() {
     <Shell title={state.title} logo={state.logo_url ?? null} nameHint={nameUsage(q)}>
       {!q ? (
         <div className="waiting"><div className="bounce">⏳</div><p className="muted">Gleich geht’s los …</p></div>
+      ) : !QUESTION_TYPES[q.type] ? (
+        <Outdated type={q.type} />
       ) : q.type === 'qa' ? (
         <QaParticipant key={q.id} q={q} code={code} tick={state} />
       ) : prev && !editing ? (
@@ -97,6 +99,26 @@ function Shell({ title, logo, nameHint, children }) {
       {title && nameHint && <NameBar hint={nameHint} />}
       {children}
       <CornerLogo url={logo !== undefined ? logo : fallback} />
+    </div>
+  )
+}
+
+// Fragetyp unbekannt = auf dem Gerät läuft noch eine ältere App-Version (Seite vor dem Update geöffnet
+// oder aus dem Cache geladen). Einmal automatisch neu laden, sonst Knopf anbieten.
+function Outdated({ type }) {
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('klassenpuls.reloaded') === type) return
+      sessionStorage.setItem('klassenpuls.reloaded', type)
+    } catch { return }
+    window.location.reload()
+  }, [type])
+  return (
+    <div className="card center stack">
+      <div style={{ fontSize: '3rem' }}>🔄</div>
+      <h2>Neue Version verfügbar</h2>
+      <p className="muted">Diese Frage braucht die neueste Version von Klassenpuls. Bitte lade die Seite neu.</p>
+      <button className="btn big mint" style={{ margin: '0 auto' }} onClick={() => window.location.reload()}>Seite neu laden</button>
     </div>
   )
 }
@@ -159,7 +181,7 @@ function QaParticipant({ q, code, tick }) {
           </div>
         </div>
       ) : (
-        <button className="btn big" style={{ width: '100%', justifyContent: 'center' }} onClick={() => { setWriting(true); setSent(false) }}>Neue Frage stellen</button>
+        <button className="btn big" style={{ width: '100%', justifyContent: 'center' }} onClick={() => { setWriting(true); setSent(false) }}>Frage stellen</button>
       )}
       {sent && !writing && <div className="alert ok">Danke! Ihre Frage wurde eingereicht.{moderated ? ' Sie erscheint, sobald sie freigegeben wurde.' : ''}</div>}
       {err && <div className="alert">{err}</div>}
