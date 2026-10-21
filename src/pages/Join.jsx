@@ -128,6 +128,7 @@ function QaParticipant({ q, code, tick }) {
   const voting = q.settings?.voting !== false
   const moderated = !!q.settings?.moderate
   const [list, setList] = useState([])
+  const [blocked, setBlocked] = useState(false) // eigene Frage wurde vom Lehrer gelöscht
   const [writing, setWriting] = useState(false)
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -135,8 +136,8 @@ function QaParticipant({ q, code, tick }) {
   const [sent, setSent] = useState(false)
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase.rpc('get_qa_questions', { p_code: code, p_question_id: q.id, p_participant: participantId() })
-    if (!error && data) setList(data)
+    const { data, error } = await supabase.rpc('get_qa_state', { p_code: code, p_question_id: q.id, p_participant: participantId() })
+    if (!error && data) { setList(data.questions); setBlocked(data.blocked) }
   }, [code, q.id])
   useEffect(() => { load() }, [load, tick]) // tick = jeder Live-Abgleich (alle 4 s und bei Freigaben)
 
@@ -165,7 +166,9 @@ function QaParticipant({ q, code, tick }) {
       <p className="muted" style={{ margin: 0 }}>
         Haben Sie eine Frage an den Referenten?{!visible.length && !mine.length && ' Stellen Sie als Erster eine Frage!'}
       </p>
-      {writing ? (
+      {blocked ? (
+        <div className="alert">Ihre Frage wurde entfernt. Sie können in dieser Runde keine weiteren Fragen stellen.</div>
+      ) : writing ? (
         <div className="stack">
           <textarea maxLength={300} autoFocus placeholder="Ihre Frage …" value={text} onChange={(e) => setText(e.target.value)} />
           <div className="small muted" style={{ textAlign: 'right', marginTop: -8 }}>{text.length}/300</div>
@@ -177,7 +180,7 @@ function QaParticipant({ q, code, tick }) {
       ) : (
         <button className="btn big" style={{ width: '100%', justifyContent: 'center' }} onClick={() => { setWriting(true); setSent(false) }}>Frage stellen</button>
       )}
-      {sent && !writing && <div className="alert ok">Danke! Ihre Frage wurde eingereicht.{moderated ? ' Sie erscheint, sobald sie freigegeben wurde.' : ''}</div>}
+      {sent && !writing && !blocked && <div className="alert ok">Danke! Ihre Frage wurde eingereicht.{moderated ? ' Sie erscheint, sobald sie freigegeben wurde.' : ''}</div>}
       {err && <div className="alert">{err}</div>}
       {visible.length > 0 && <QaList items={visible} onVote={vote} />}
       {mine.length > 0 && (
