@@ -4,7 +4,7 @@ import { supabase, participantId, errorText, getParticipantName, setParticipantN
 import NameField from '../components/NameField'
 import CornerLogo, { useLogoUrl } from '../components/CornerLogo'
 import { useTheme, inkOn } from '../themes'
-import { pastel } from '../components/Results'
+import { pastel, QaStage } from '../components/Results'
 import Logo from '../components/Logo'
 import CroppedImage from '../components/CroppedImage'
 import { nameUsage } from '../questionTypes'
@@ -72,6 +72,8 @@ export default function Join() {
     <Shell title={state.title} logo={state.logo_url ?? null} nameHint={nameUsage(q)}>
       {!q ? (
         <div className="waiting"><div className="bounce">⏳</div><p className="muted">Gleich geht’s los …</p></div>
+      ) : q.type === 'qa' ? (
+        <QaParticipant key={q.id} q={q} code={code} tick={state} />
       ) : prev && !editing ? (
         <div className="card center stack">
           <div style={{ fontSize: '3rem' }}>🎉</div>
@@ -95,6 +97,81 @@ function Shell({ title, logo, nameHint, children }) {
       {title && nameHint && <NameBar hint={nameHint} />}
       {children}
       <CornerLogo url={logo !== undefined ? logo : fallback} />
+    </div>
+  )
+}
+
+// Q&A: eigene Fragen einreichen, fremde Fragen durchwischen und mit Daumen hoch bewerten
+function QaParticipant({ q, code, tick }) {
+  const voting = q.settings?.voting !== false
+  const moderated = !!q.settings?.moderate
+  const [list, setList] = useState([])
+  const [index, setIndex] = useState(0)
+  const [currentId, setCurrentId] = useState(null)
+  const [writing, setWriting] = useState(false)
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const [sent, setSent] = useState(false)
+
+  const load = useCallback(async () => {
+    const { data, error } = await supabase.rpc('get_qa_questions', { p_code: code, p_question_id: q.id, p_participant: participantId() })
+    if (!error && data) setList(data)
+  }, [code, q.id])
+  useEffect(() => { load() }, [load, tick]) // tick = jeder Live-Abgleich (alle 4 s und bei Freigaben)
+
+  const visible = voting ? list.filter((x) => x.approved) : []
+  const mine = list.filter((x) => x.mine && (!voting || !x.approved))
+  // beim Umsortieren auf derselben Frage bleiben
+  const found = visible.findIndex((x) => x.id === currentId)
+  const i = found >= 0 ? found : Math.min(index, Math.max(visible.length - 1, 0))
+  const pick = (n) => { setIndex(n); setCurrentId(visible[n]?.id ?? null) }
+
+  async function send() {
+    setBusy(true); setErr('')
+    const { error } = await supabase.rpc('submit_qa_question', { p_code: code, p_question_id: q.id, p_participant: participantId(), p_text: text })
+    setBusy(false)
+    if (error) return setErr(errorText(error))
+    setText(''); setWriting(false); setSent(true); load()
+  }
+  async function vote(it) {
+    setErr('')
+    setList((l) => l.map((x) => (x.id === it.id ? { ...x, voted: !x.voted, votes: x.votes + (x.voted ? -1 : 1) } : x)))
+    setCurrentId(it.id)
+    const { error } = await supabase.rpc('toggle_qa_vote', { p_code: code, p_question_id: q.id, p_participant: participantId(), p_qa: it.id })
+    if (error) setErr(errorText(error))
+    load()
+  }
+
+  return (
+    <div className="card stack">
+      <h2 style={{ marginBottom: 0 }}>Fragen und Antworten</h2>
+      <p className="muted" style={{ margin: 0 }}>
+        Haben Sie eine Frage an den Referenten?{!visible.length && !mine.length && ' Stellen Sie als Erster eine Frage!'}
+      </p>
+      {writing ? (
+        <div className="stack">
+          <textarea maxLength={300} autoFocus placeholder="Ihre Frage …" value={text} onChange={(e) => setText(e.target.value)} />
+          <div className="small muted" style={{ textAlign: 'right', marginTop: -8 }}>{text.length}/300</div>
+          <div className="row">
+            <button className="btn mint grow" style={{ justifyContent: 'center' }} disabled={busy || !text.trim()} onClick={send}>{busy ? 'Sende …' : 'Abschicken'}</button>
+            <button className="btn ghost" onClick={() => { setWriting(false); setErr('') }}>Abbrechen</button>
+          </div>
+        </div>
+      ) : (
+        <button className="btn big" style={{ width: '100%', justifyContent: 'center' }} onClick={() => { setWriting(true); setSent(false) }}>Neue Frage stellen</button>
+      )}
+      {sent && !writing && <div className="alert ok">Danke! Ihre Frage wurde eingereicht.{moderated ? ' Sie erscheint, sobald sie freigegeben wurde.' : ''}</div>}
+      {err && <div className="alert">{err}</div>}
+      {visible.length > 0 && <QaStage items={visible} index={i} onIndex={pick} onVote={vote} big={false} />}
+      {mine.length > 0 && (
+        <div className="qa-mine">
+          <b>Ihre Fragen</b>
+          <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
+            {mine.map((x) => <li key={x.id}>{x.text} {!x.approved && <span className="pill">wartet auf Freigabe</span>}</li>)}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }

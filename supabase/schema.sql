@@ -504,3 +504,113 @@ alter table public.questions drop constraint questions_type_check;
 alter table public.questions add constraint questions_type_check
   check (type in ('multiple_choice','ranking','scale','open','pin','matrix'));
 -- submit_response: zusätzlicher Zweig für 'matrix' (vollständige Fassung: Migration "pollbox_matrix_question")
+
+-- ============ Fragetyp "Q&A" (qa) ============
+-- settings = { voting: bool (Standard true), moderate: bool (Standard false) }; keine Einträge in responses
+-- Migration "qa_fragetyp"
+alter table public.questions drop constraint if exists questions_type_check;
+alter table public.questions add constraint questions_type_check
+  check (type in ('multiple_choice','ranking','scale','open','pin','matrix','qa'));
+
+create table public.qa_questions (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references public.sessions(id) on delete cascade,
+  question_id uuid not null references public.questions(id) on delete cascade,
+  participant_id uuid not null,
+  text text not null check (length(text) between 1 and 300),
+  approved boolean not null default true,
+  created_at timestamptz not null default now()
+);
+create index on public.qa_questions(session_id, question_id);
+
+create table public.qa_votes (
+  qa_question_id uuid not null references public.qa_questions(id) on delete cascade,
+  session_id uuid not null references public.sessions(id) on delete cascade,
+  participant_id uuid not null,
+  created_at timestamptz not null default now(),
+  primary key (qa_question_id, participant_id)
+);
+create index on public.qa_votes(session_id);
+
+alter table public.qa_questions enable row level security;
+alter table public.qa_votes enable row level security;
+
+-- Lehrer sehen, moderieren und löschen die Fragen ihrer Durchläufe; Schüler nur über die Funktionen unten
+create policy "qa questions owner read" on public.qa_questions for select to authenticated
+  using (exists (select 1 from public.sessions s where s.id = session_id and s.owner_id = (select auth.uid())));
+create policy "qa questions owner update" on public.qa_questions for update to authenticated
+  using (exists (select 1 from public.sessions s where s.id = session_id and s.owner_id = (select auth.uid())))
+  with check (exists (select 1 from public.sessions s where s.id = session_id and s.owner_id = (select auth.uid())));
+create policy "qa questions owner delete" on public.qa_questions for delete to authenticated
+  using (exists (select 1 from public.sessions s where s.id = session_id and s.owner_id = (select auth.uid())));
+create policy "qa votes owner read" on public.qa_votes for select to authenticated
+  using (exists (select 1 from public.sessions s where s.id = session_id and s.owner_id = (select auth.uid())));
+
+-- aktive Q&A-Frage zum Code (oder Fehler)
+create or replace function public.qa_active(p_code text, p_question_id uuid, out s public.sessions, out q public.questions)
+language plpgsql stable security definer set search_path = '' as $$
+begin
+  select * into s from public.sessions where code = p_code and status = 'live' limit 1;
+  if not found then raise exception 'Die Umfrage ist nicht (mehr) aktiv'; end if;
+  select * into q from public.questions where poll_id = s.poll_id order by position, id offset s.current_index limit 1;
+  if q.id is null or q.id <> p_question_id or q.type <> 'qa' then raise exception 'Diese Frage ist nicht mehr aktiv'; end if;
+end $$;
+revoke execute on function public.qa_active(text, uuid) from public, anon, authenticated;
+
+create or replace function public.submit_qa_question(p_code text, p_question_id uuid, p_participant uuid, p_text text)
+returns boolean language plpgsql security definer set search_path = '' as $$
+declare a record; txt text;
+begin
+  select * into a from public.qa_active(p_code, p_question_id);
+  txt := btrim(coalesce(p_text, ''));
+  if length(txt) < 1 or length(txt) > 300 then raise exception 'Bitte 1–300 Zeichen eingeben'; end if;
+  if (select count(*) from public.qa_questions where session_id = (a.s).id and question_id = (a.q).id and participant_id = p_participant) >= 10 then
+    raise exception 'Sie haben schon 10 Fragen gestellt';
+  end if;
+  insert into public.qa_questions (session_id, question_id, participant_id, text, approved)
+  values ((a.s).id, (a.q).id, p_participant, txt, not coalesce(((a.q).settings->>'moderate')::boolean, false));
+  return true;
+end $$;
+
+create or replace function public.toggle_qa_vote(p_code text, p_question_id uuid, p_participant uuid, p_qa uuid)
+returns boolean language plpgsql security definer set search_path = '' as $$
+declare a record;
+begin
+  select * into a from public.qa_active(p_code, p_question_id);
+  if not coalesce(((a.q).settings->>'voting')::boolean, true) then raise exception 'Bewerten ist ausgeschaltet'; end if;
+  if not exists (select 1 from public.qa_questions where id = p_qa and question_id = (a.q).id and session_id = (a.s).id and approved) then
+    raise exception 'Frage nicht gefunden';
+  end if;
+  delete from public.qa_votes where qa_question_id = p_qa and participant_id = p_participant;
+  if found then return false; end if;
+  insert into public.qa_votes (qa_question_id, session_id, participant_id) values (p_qa, (a.s).id, p_participant);
+  return true;
+end $$;
+
+-- Für Schüler: freigegebene Fragen (nur wenn Bewerten an) plus die eigenen, meiste Daumen zuerst
+create or replace function public.get_qa_questions(p_code text, p_question_id uuid, p_participant uuid)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare a record; voting boolean;
+begin
+  select * into a from public.qa_active(p_code, p_question_id);
+  voting := coalesce(((a.q).settings->>'voting')::boolean, true);
+  return coalesce((
+    select jsonb_agg(jsonb_build_object('id', x.id, 'text', x.text, 'approved', x.approved, 'mine', x.participant_id = p_participant,
+      'votes', x.votes, 'voted', x.voted) order by x.votes desc, x.created_at)
+    from (
+      select qq.id, qq.text, qq.approved, qq.participant_id, qq.created_at,
+        (select count(*) from public.qa_votes v where v.qa_question_id = qq.id)::int as votes,
+        exists (select 1 from public.qa_votes v where v.qa_question_id = qq.id and v.participant_id = p_participant) as voted
+      from public.qa_questions qq
+      where qq.session_id = (a.s).id and qq.question_id = (a.q).id
+        and ((voting and qq.approved) or qq.participant_id = p_participant)
+    ) x
+  ), '[]'::jsonb);
+end $$;
+
+grant execute on function public.submit_qa_question(text, uuid, uuid, text) to anon, authenticated;
+grant execute on function public.toggle_qa_vote(text, uuid, uuid, uuid) to anon, authenticated;
+grant execute on function public.get_qa_questions(text, uuid, uuid) to anon, authenticated;
+
+alter publication supabase_realtime add table public.qa_questions;
+alter publication supabase_realtime add table public.qa_votes;

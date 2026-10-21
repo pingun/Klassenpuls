@@ -5,7 +5,7 @@ Version 0.8
 Liveabstimmung: Lehrkräfte erstellen wiederverwendbare Umfragen,
 Schüler machen per QR-Code ohne Konto mit, die Ergebnisse erscheinen live am Beamer.
 
-**Fragetypen:** Multiple Choice (Einzel/Mehrfach) · Ranking · Skala (Aussagen bewerten) · Offene Frage (Pinnwand oder Wortwolke) · Bild anheften (Pins auf ein hochgeladenes Bild) · 4-Felder (Items auf zwei Achsen 1–10 einordnen)
+**Fragetypen:** Multiple Choice (Einzel/Mehrfach) · Ranking · Skala (Aussagen bewerten) · Offene Frage (Pinnwand oder Wortwolke) · Bild anheften (Pins auf ein hochgeladenes Bild) · 4-Felder (Items auf zwei Achsen 1–10 einordnen) · Q&A (Teilnehmer stellen Fragen, bewerten sie mit Daumen hoch; optional mit Freigabe durch den Lehrer)
 **Vorlagen:** „Erwartungen der Schüler managen“ (6 Fragen) und „Feedback zur Stunde“
 
 # Verwendete Infrastruktur
@@ -75,6 +75,8 @@ Die Paletten stehen zentral in `src/themes.js`.
 
 → / Leertaste / PageDown = nächste Frage · ← / PageUp = zurück (funktioniert mit Presenter-Fernbedienungen)
 R = Ergebnisse ein/aus · Q = QR-Code groß · F = Vollbild
+
+Bei **Q&A** blättern die Pfeiltasten zuerst durch die eingereichten Fragen (meiste Daumen zuerst), nach der letzten geht es zur nächsten Frage der Umfrage. Ist „Eingereichte Fragen moderieren“ an, erscheinen neue Fragen erst nach Freigabe über „⏳ zur Freigabe“ in der Fußleiste.
 
 Jeder Start einer Umfrage ist ein eigener **Durchlauf** (z. B. „8b“, „9a“) mit eigenem Code –
 die Ergebnisse bleiben getrennt und sind unter „Durchläufe & Ergebnisse“ jederzeit abrufbar.

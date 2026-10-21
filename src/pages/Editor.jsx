@@ -5,6 +5,7 @@ import { QUESTION_TYPES, blankQuestion, MATRIX_COLORS } from '../questionTypes'
 import { inkOn } from '../themes'
 import StartButton from '../components/StartButton'
 import TypePreview from '../components/TypePreview'
+import { QaStage } from '../components/Results'
 import PinImageSettings from '../components/PinImageSettings'
 import ThemePreview from '../components/ThemePreview'
 import { THEMES, DEFAULT_THEME, themeByKey, useSchoolTheme } from '../themes'
@@ -243,6 +244,17 @@ function QuestionEditor({ q, index, total, onChange, onMove, onRemove }) {
       )}
       {q.type === 'pin' && (
         <PinImageSettings settings={q.settings} onChange={(settings) => onChange({ settings })} />
+      )}
+      {q.type === 'qa' && (
+        <div className="stack">
+          <QaStage items={[]} index={0} big={false} />
+          <label className="row small" style={{ fontWeight: 700 }}>
+            <input type="checkbox" checked={q.settings.voting !== false} onChange={(e) => setSetting('voting', e.target.checked)} /> Teilnehmer können eingereichte Fragen einsehen und positiv bewerten
+          </label>
+          <label className="row small" style={{ fontWeight: 700 }}>
+            <input type="checkbox" checked={!!q.settings.moderate} onChange={(e) => setSetting('moderate', e.target.checked)} /> Eingereichte Fragen moderieren
+          </label>
+        </div>
       )}
       {q.type === 'open' && (
         <label className="field small" style={{ maxWidth: 300 }}><span>Darstellung am Beamer</span>
