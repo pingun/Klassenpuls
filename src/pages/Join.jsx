@@ -7,6 +7,7 @@ import { useTheme, inkOn } from '../themes'
 import { pastel } from '../components/Results'
 import Logo from '../components/Logo'
 import CroppedImage from '../components/CroppedImage'
+import { nameUsage } from '../questionTypes'
 
 const answeredKey = (sid) => `klassenpuls.answered.${sid}`
 function loadAnswered(sid) {
@@ -68,7 +69,7 @@ export default function Join() {
   const prev = q && answered[q.id]
 
   return (
-    <Shell title={state.title} logo={state.logo_url ?? null}>
+    <Shell title={state.title} logo={state.logo_url ?? null} nameHint={nameUsage(q)}>
       {!q ? (
         <div className="waiting"><div className="bounce">⏳</div><p className="muted">Gleich geht’s los …</p></div>
       ) : prev && !editing ? (
@@ -86,12 +87,12 @@ export default function Join() {
   )
 }
 
-function Shell({ title, logo, children }) {
+function Shell({ title, logo, nameHint, children }) {
   const fallback = useLogoUrl(null)
   return (
     <div className="student">
       <div className="row" style={{ marginBottom: 12 }}><Logo /><b className="grow">{title || 'Klassenpuls'}</b></div>
-      {title && <NameBar />}
+      {title && nameHint && <NameBar hint={nameHint} />}
       {children}
       <CornerLogo url={logo !== undefined ? logo : fallback} />
     </div>
@@ -115,7 +116,7 @@ function QuestionForm({ q, code, initial, onDone }) {
     setBusy(true); setErr('')
     // 4-Felder: übersprungene und nicht bewegte Items werden als null gesendet
     const payload = q.type === 'matrix' ? { values: answer.values.map((v) => (Array.isArray(v) ? v : null)) } : answer
-    const { error } = await supabase.rpc('submit_response', { p_code: code, p_question_id: q.id, p_participant: participantId(), p_answer: payload, p_name: getParticipantName() || null })
+    const { error } = await supabase.rpc('submit_response', { p_code: code, p_question_id: q.id, p_participant: participantId(), p_answer: payload, p_name: (nameUsage(q) && getParticipantName()) || null })
     setBusy(false)
     if (error) return setErr(errorText(error))
     onDone(answer)
@@ -250,14 +251,14 @@ function PinInput({ q, value, onChange }) {
 }
 
 // Kleine Leiste: anonym oder mit (freiwilligem) Namen teilnehmen
-function NameBar() {
+function NameBar({ hint }) {
   const [name, setName] = useState(getParticipantName)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(name)
   if (editing) {
     return (
       <form className="card name-bar-edit" onSubmit={(e) => { e.preventDefault(); setName(setParticipantName(draft)); setEditing(false) }}>
-        <NameField value={draft} onChange={setDraft} autoFocus />
+        <NameField value={draft} onChange={setDraft} autoFocus hint={hint} />
         <div className="row">
           <button className="btn small">Übernehmen</button>
           <button type="button" className="btn ghost small" onClick={() => { setDraft(name); setEditing(false) }}>Abbrechen</button>

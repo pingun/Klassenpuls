@@ -69,6 +69,7 @@ Die Paletten stehen zentral in `src/themes.js`.
 - Das Anlegen läuft über die Supabase Edge Function `manage-teachers` (Quellcode in `supabase/functions/`).
   Sie prüft serverseitig, ob der Aufrufer Admin ist.
 - Schüler brauchen kein Konto (anonyme Geräte-ID, eine Antwort pro Frage, änderbar).
+- Einen freiwilligen Namen können Schüler nur bei Fragen angeben, in deren Auswertung er auftaucht: Offene Frage als Pinnwand (am Beamer) und Bild anheften (beim Darüberfahren über einen Pin). Bei allen anderen Fragen wird kein Name gespeichert.
 
 ## Bedienung am Beamer
 

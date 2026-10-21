@@ -99,6 +99,14 @@ export function blankQuestion(type = 'multiple_choice') {
   return { type, prompt: '', ...QUESTION_TYPES[type].defaults() }
 }
 
+// Wo der Schülername in der Auswertung auftaucht: Pinnwand (am Beamer) und Pins (beim Darüberfahren).
+// Bei allen anderen Fragen wird kein Name abgefragt oder gespeichert.
+export function nameUsage(q) {
+  if (q?.type === 'open' && q.settings?.display !== 'cloud') return 'Mit Namen steht er am Beamer unter deiner Antwort auf der Pinnwand.'
+  if (q?.type === 'pin') return 'Mit Namen kann dein Lehrer sehen, welcher Pin von dir ist.'
+  return null
+}
+
 // Vorlagen – jede erzeugt eine vollständige, wiederverwendbare Umfrage
 export const TEMPLATES = [
   {

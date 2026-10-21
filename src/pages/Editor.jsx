@@ -153,7 +153,8 @@ export default function Editor({ auth }) {
 
       <div className="card stack">
         <label className="field"><span>Überschrift der Umfrage</span>
-          <input type="text" value={poll.title} onChange={(e) => setPollField('title', e.target.value)} style={{ fontSize: '1.3rem', fontWeight: 800 }} />
+          <input type="text" value={poll.title} placeholder="Neue Umfrage" onChange={(e) => setPollField('title', e.target.value)} style={{ fontSize: '1.3rem', fontWeight: 800 }}
+            onFocus={() => { if (poll.title === 'Neue Umfrage') setPollField('title', '') }} />
         </label>
         <label className="field"><span>Beschreibung (optional, nur für dich)</span>
           <input type="text" value={poll.description || ''} onChange={(e) => setPollField('description', e.target.value)} />
