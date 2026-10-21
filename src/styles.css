@@ -332,7 +332,7 @@ button.logo-tile:hover { border-color: var(--brand-tint); }
 /* 4-Felder (Matrix) */
 .matrix-wrap { display: flex; gap: 32px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
 .matrix-chart { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; gap: 8px 10px; }
-.matrix-ylabel { writing-mode: vertical-rl; transform: rotate(180deg); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; color: var(--ink-soft); white-space: nowrap; }
+.matrix-ylabel { writing-mode: vertical-rl; transform: rotate(180deg); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; color: var(--ink); white-space: nowrap; }
 .matrix-plot { position: relative; height: var(--matrix-h, min(56vh, 520px)); aspect-ratio: 1; }
 .matrix-cells { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; }
 .matrix-cells div { background: var(--muted-bg); border-radius: 6px; }
@@ -341,7 +341,7 @@ button.logo-tile:hover { border-color: var(--brand-tint); }
   display: grid; place-items: center; font-weight: 700; font-size: .95rem; border: 2px solid var(--card);
   box-shadow: 0 1px 4px rgba(0,0,0,.25); transition: left .6s cubic-bezier(.2,.8,.2,1), bottom .6s cubic-bezier(.2,.8,.2,1);
 }
-.matrix-xlabel { grid-column: 2; text-align: center; font-size: 1.15rem; color: var(--ink-soft); }
+.matrix-xlabel { grid-column: 2; text-align: center; font-size: 1.2rem; font-weight: 700; color: var(--ink); }
 .matrix-legend { list-style: none; margin: 0; padding: 0; min-width: 220px; max-width: 360px; display: flex; flex-direction: column; }
 .matrix-legend li { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-weight: 600; }
 .matrix-legend li.none { opacity: .55; }

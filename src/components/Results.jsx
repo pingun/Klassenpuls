@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { inkOn } from '../themes'
 import CroppedImage from './CroppedImage'
 // helle Diagrammfarben des aktiven Stils (siehe src/themes.js)
@@ -175,8 +175,13 @@ function PinResults({ q, answers }) {
 
 // 4-Felder: Mittelwert je Item als nummerierter Farbpunkt in der Matrix, rechts die Legende.
 // Maus auf einen Punkt (oder Legendeneintrag): nur dieser Punkt bleibt sichtbar, dazu seine Einzelbewertungen als kleine Punkte.
+// Fokus endet, wenn die Maus diesen Umkreis um den Ergebnispunkt verlässt (Vielfaches des Punktradius)
+const MATRIX_FOCUS_RADIUS = 2.5
+
 function MatrixResults({ q, answers }) {
   const [hover, setHover] = useState(null) // Item unter der Maus
+  const hoverFromPoint = useRef(false) // Fokus kam vom Punkt (nicht von der Legende)
+  const pointEls = useRef({})
   const [pinned, setPinned] = useState(null) // per Klick/Tippen festgehalten (für Touch-Geräte)
   const focus = hover ?? pinned
   const colors = q.settings?.colors || []
@@ -193,15 +198,24 @@ function MatrixResults({ q, answers }) {
   })
   const pos = (v) => `${((v - 1) / 9) * 100}%`
   const focused = focus != null ? items[focus] : null
-  const enter = (i) => setHover(i)
-  const leave = () => setHover(null)
+  const enter = (i, fromPoint = false) => { hoverFromPoint.current = fromPoint; setHover(i) }
+  const leave = () => { hoverFromPoint.current = false; setHover(null) }
+  // Maus entfernt sich vom fokussierten Punkt → wieder alle Punkte zeigen
+  const onPlotMove = (e) => {
+    if (hover == null || !hoverFromPoint.current) return
+    const el = pointEls.current[hover]
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    const dist = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2))
+    if (dist > (r.width / 2) * MATRIX_FOCUS_RADIUS) leave()
+  }
   const toggle = (i) => setPinned((p) => (p === i ? null : i))
 
   return (
     <div className="matrix-wrap">
       <div className="matrix-chart">
         <div className="matrix-ylabel"><span>{q.settings?.yLabel} →</span></div>
-        <div className="matrix-plot" onMouseLeave={leave}>
+        <div className="matrix-plot" onMouseLeave={leave} onMouseMove={onPlotMove}>
           <div className="matrix-cells" onClick={() => setPinned(null)}><div /><div /><div /><div /></div>
           {focused?.votes.map((v) => (
             <span key={`${v.x}|${v.y}`} className="matrix-vote" title={`${v.x} / ${v.y}${v.count > 1 ? ` (${v.count}×)` : ''}`}
@@ -212,7 +226,8 @@ function MatrixResults({ q, answers }) {
           {items.filter((it) => it.n).map((it) => (
             <span key={it.i} className={`matrix-point ${focus != null && focus !== it.i ? 'faded' : ''} ${focus === it.i ? 'active' : ''}`}
               title={`${it.name}: Ø ${fmt(it.x)} / Ø ${fmt(it.y)} (${it.n} Bewertungen)`}
-              onMouseEnter={() => enter(it.i)} onClick={() => toggle(it.i)}
+              ref={(el) => { pointEls.current[it.i] = el }}
+              onMouseEnter={() => enter(it.i, true)} onClick={() => toggle(it.i)}
               style={{ left: pos(it.x), bottom: pos(it.y), background: it.color, color: it.ink }}>{it.i + 1}</span>
           ))}
         </div>
