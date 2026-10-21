@@ -93,6 +93,20 @@ export const QUESTION_TYPES = {
     optionLabel: null,
     defaults: () => ({ options: ['', ''], settings: { xLabel: '', yLabel: '', colors: [MATRIX_COLORS[0], MATRIX_COLORS[1]] } }),
   },
+  qa: {
+    label: 'Q&A',
+    icon: '🙋',
+    hint: 'Schüler stellen Fragen und bewerten sie mit Daumen hoch.',
+    explain: 'Die Schüler reichen während der Stunde eigene Fragen ein – so viele sie möchten. Wenn du es erlaubst, sehen sie die Fragen der anderen und können sie mit Daumen hoch unterstützen. Am Beamer erscheint eine Frage nach der anderen, die meistgewünschte zuerst. Auf Wunsch gibst du jede Frage vorher frei.',
+    sample: {
+      prompt: 'Zeit für Fragen',
+      options: [],
+      settings: { voting: true, moderate: false },
+      answers: [{ id: 'a', text: 'Kommt das Thema auch in der Klassenarbeit dran?', votes: 12 }, { id: 'b', text: 'Können wir das Experiment noch einmal wiederholen?', votes: 7 }, { id: 'c', text: 'Wo finde ich die Lösungen zu den Übungen?', votes: 3 }],
+    },
+    optionLabel: null,
+    defaults: () => ({ prompt: 'Zeit für Fragen', options: [], settings: { voting: true, moderate: false } }),
+  },
 }
 
 export function blankQuestion(type = 'multiple_choice') {

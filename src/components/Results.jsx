@@ -11,6 +11,7 @@ export default function Results({ question, answers }) {
   if (!question) return null
   if (question.type === 'pin') return <PinResults q={question} answers={answers} />
   if (question.type === 'matrix') return <MatrixResults q={question} answers={answers} />
+  if (question.type === 'qa') return <QaStage items={answers} index={0} />
   if (!answers.length) {
     return <div className="empty-results"><div className="bounce">⏳</div><div>Noch keine Antworten – scannt den QR-Code!</div></div>
   }
@@ -246,6 +247,47 @@ function MatrixResults({ q, answers }) {
           </li>
         ))}
       </ol>
+    </div>
+  )
+}
+
+// Q&A: eine Frage pro Ansicht, darunter „Frage x von y“ und die Daumen.
+// items: [{ id, text, votes }] – bereits sortiert; mit onIndex wird gewischt, mit onVote abgestimmt.
+export function QaStage({ items, index, onIndex, onVote, big = true, showVotes = true }) {
+  const start = useRef(null)
+  if (!items.length) {
+    return (
+      <div className={`qa-empty ${big ? 'big' : ''}`}>
+        <div className="qa-empty-title">Keine Fragen aus dem Publikum!</div>
+        <div>Eingehende Fragen werden hier angezeigt, sodass Sie sie nacheinander beantworten können.</div>
+      </div>
+    )
+  }
+  const i = Math.min(Math.max(index, 0), items.length - 1)
+  const it = items[i]
+  const go = (d) => onIndex && onIndex(Math.min(Math.max(i + d, 0), items.length - 1))
+  const touch = {
+    onTouchStart: (e) => { start.current = e.touches[0].clientX },
+    onTouchEnd: (e) => {
+      if (start.current == null) return
+      const dx = e.changedTouches[0].clientX - start.current
+      start.current = null
+      if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1)
+    },
+  }
+  return (
+    <div className={`qa-stage ${big ? 'big' : ''}`} {...touch}>
+      <div className="qa-row">
+        {onIndex && <button className="btn ghost icon qa-nav" onClick={() => go(-1)} disabled={i === 0} aria-label="Vorherige Frage">‹</button>}
+        <div className="qa-card" key={it.id}>{it.text}</div>
+        {onIndex && <button className="btn ghost icon qa-nav" onClick={() => go(1)} disabled={i === items.length - 1} aria-label="Nächste Frage">›</button>}
+      </div>
+      <div className="qa-meta">
+        <span>Frage {i + 1} von {items.length}</span>
+        {showVotes && (onVote
+          ? <button className={`qa-thumb ${it.voted ? 'on' : ''}`} onClick={() => onVote(it)} aria-pressed={!!it.voted} title={it.voted ? 'Daumen zurücknehmen' : 'Daumen hoch'}>👍 {it.votes}</button>
+          : <span className="qa-thumb">👍 {it.votes}</span>)}
+      </div>
     </div>
   )
 }

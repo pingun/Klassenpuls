@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { supabase, joinUrl, errorText } from '../supabase'
 import { QUESTION_TYPES } from '../questionTypes'
-import Results from '../components/Results'
+import Results, { QaStage } from '../components/Results'
 import CornerLogo, { useLogoUrl } from '../components/CornerLogo'
 import { useTheme } from '../themes'
 
@@ -22,6 +22,10 @@ export default function Present({ auth }) {
   const ownerLogo = useLogoUrl(ownerId)
   const logoUrl = hideLogo ? null : ownerLogo
   const [pollTheme, setPollTheme] = useState(null)
+  const [qaRows, setQaRows] = useState([])
+  const [qaVotes, setQaVotes] = useState([])
+  const [qaId, setQaId] = useState(null) // gerade gezeigte Q&A-Frage (bleibt beim Umsortieren stehen)
+  const [moderating, setModerating] = useState(false)
   useTheme(pollTheme || auth?.profile?.theme)
 
   // Laden
@@ -58,6 +62,29 @@ export default function Present({ auth }) {
     return () => { clearTimeout(t); clearInterval(poll); supabase.removeChannel(ch) }
   }, [sessionId, loadResponses])
 
+  // Q&A: eingereichte Fragen und Daumen (Realtime + Fallback-Polling)
+  const loadQa = useCallback(async () => {
+    const [{ data: rows }, { data: votes }] = await Promise.all([
+      supabase.from('qa_questions').select('id, question_id, text, approved, created_at').eq('session_id', sessionId),
+      supabase.from('qa_votes').select('qa_question_id').eq('session_id', sessionId),
+    ])
+    if (rows) setQaRows(rows)
+    if (votes) setQaVotes(votes)
+  }, [sessionId])
+  const hasQa = questions.some((x) => x.type === 'qa')
+  useEffect(() => {
+    if (!hasQa) return
+    loadQa()
+    let t
+    const debounced = () => { clearTimeout(t); t = setTimeout(loadQa, 250) }
+    const ch = supabase.channel(`qa-${sessionId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'qa_questions', filter: `session_id=eq.${sessionId}` }, debounced)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'qa_votes', filter: `session_id=eq.${sessionId}` }, debounced)
+      .subscribe()
+    const poll = setInterval(loadQa, 4000)
+    return () => { clearTimeout(t); clearInterval(poll); supabase.removeChannel(ch) }
+  }, [sessionId, hasQa, loadQa])
+
   // Kanal zu den Schülergeräten: Fragewechsel pushen + Teilnehmer zählen
   const code = session?.code
   const live = session?.status === 'live'
@@ -83,9 +110,39 @@ export default function Present({ auth }) {
   }
 
   const idx = session?.current_index ?? 0
+  const q = questions[idx]
+  const isQa = q?.type === 'qa'
+  // freigegebene Fragen, meiste Daumen zuerst, bei Gleichstand die ältere
+  const qaItems = useMemo(() => {
+    if (!isQa) return []
+    const n = new Map()
+    qaVotes.forEach((v) => n.set(v.qa_question_id, (n.get(v.qa_question_id) || 0) + 1))
+    return qaRows.filter((r) => r.question_id === q.id && r.approved)
+      .map((r) => ({ ...r, votes: n.get(r.id) || 0 }))
+      .sort((a, b) => b.votes - a.votes || a.created_at.localeCompare(b.created_at))
+  }, [isQa, q, qaRows, qaVotes])
+  const qaPending = useMemo(() => (isQa ? qaRows.filter((r) => r.question_id === q.id && !r.approved).sort((a, b) => a.created_at.localeCompare(b.created_at)) : []), [isQa, q, qaRows])
+  const qaIndex = Math.max(0, qaItems.findIndex((r) => r.id === qaId))
+  const setQaIndex = (i) => setQaId(qaItems[i]?.id ?? null)
+  async function moderate(row, approve) {
+    setErr('')
+    const { error } = approve
+      ? await supabase.from('qa_questions').update({ approved: true }).eq('id', row.id)
+      : await supabase.from('qa_questions').delete().eq('id', row.id)
+    if (error) return setErr(errorText(error))
+    loadQa(); notify()
+  }
   const go = (d) => {
     const n = Math.min(Math.max(idx + d, 0), questions.length - 1)
-    if (n !== idx) patch({ current_index: n })
+    if (n !== idx) { setQaId(null); setModerating(false); patch({ current_index: n }) }
+  }
+  // Bei Q&A blättern Pfeiltasten/Fernbedienung zuerst durch die eingereichten Fragen
+  const step = (d) => {
+    if (isQa && (session.show_results || !live) && qaItems.length) {
+      const n = qaIndex + d
+      if (n >= 0 && n < qaItems.length) return setQaIndex(n)
+    }
+    go(d)
   }
   const toggleResults = () => patch({ show_results: !session.show_results })
   async function reopen() {
@@ -101,12 +158,12 @@ export default function Present({ auth }) {
   const keyRef = useRef()
   keyRef.current = (e) => {
     if (!session || e.target.closest?.('input, textarea')) return
-    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); go(1) }
-    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); go(-1) }
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); step(1) }
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); step(-1) }
     else if (e.key === 'r') toggleResults()
     else if (e.key === 'f') fullscreen()
     else if (e.key === 'q') setBigQr((v) => !v)
-    else if (e.key === 'Escape') setBigQr(false)
+    else if (e.key === 'Escape') { setBigQr(false); setModerating(false) }
   }
   useEffect(() => {
     const h = (e) => keyRef.current(e)
@@ -114,7 +171,6 @@ export default function Present({ auth }) {
     return () => window.removeEventListener('keydown', h)
   }, [])
 
-  const q = questions[idx]
   const answers = useMemo(() => responses.filter((r) => r.question_id === q?.id).map((r) => (r.participant_name ? { ...r.answer, _name: r.participant_name } : r.answer)), [responses, q])
   const participants = useMemo(() => new Set(responses.map((r) => r.participant_id)).size, [responses])
   const names = useMemo(() => [...new Set(responses.map((r) => r.participant_name).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de')), [responses])
@@ -147,9 +203,11 @@ export default function Present({ auth }) {
           <>
             <div className="muted small present-type">{QUESTION_TYPES[q.type].icon} {QUESTION_TYPES[q.type].label}</div>
             <h1>{q.prompt}</h1>
-            {session.show_results || !live
-              ? <Results question={q} answers={answers} />
-              : <div className="empty-results"><div className="bounce">🙈</div><div>Ergebnisse sind verborgen – {answers.length} Antwort{answers.length === 1 ? '' : 'en'} eingegangen</div></div>}
+            {isQa && (session.show_results || !live)
+              ? <QaStage items={qaItems} index={qaIndex} onIndex={setQaIndex} showVotes={q.settings?.voting !== false} />
+              : session.show_results || !live
+                ? <Results question={q} answers={answers} />
+                : <div className="empty-results"><div className="bounce">🙈</div><div>Ergebnisse sind verborgen – {isQa ? `${qaItems.length} Frage${qaItems.length === 1 ? '' : 'n'}` : `${answers.length} Antwort${answers.length === 1 ? '' : 'en'}`} eingegangen</div></div>}
           </>
         ) : <div className="empty-results">Diese Umfrage hat noch keine Fragen.</div>}
       </div>
@@ -157,7 +215,14 @@ export default function Present({ auth }) {
       <div className="present-foot">
         <Link to="/dashboard" className="btn ghost small">← Übersicht</Link>
         {live && <span className="counter" title="Geräte, die gerade verbunden sind">👥 {online} online</span>}
-        <span className="counter" title="Antworten auf diese Frage">✔ {answers.length} Antworten</span>
+        {isQa
+          ? <span className="counter" title="Freigegebene Fragen aus dem Publikum">🙋 {qaItems.length} Fragen</span>
+          : <span className="counter" title="Antworten auf diese Frage">✔ {answers.length} Antworten</span>}
+        {isQa && (q.settings?.moderate || qaPending.length > 0) && (
+          <button className={`btn small ${qaPending.length ? 'peach' : 'ghost'}`} onClick={() => setModerating(true)} title="Eingereichte Fragen freigeben oder ablehnen">
+            ⏳ {qaPending.length} zur Freigabe
+          </button>
+        )}
         <span className="muted small" title={names.length ? `Mit Namen: ${names.join(', ')}` : 'Alle anonym'}>
           {participants} Teilnehmer insgesamt{names.length ? ` · ${names.length} mit Namen` : ''}
         </span>
@@ -171,6 +236,25 @@ export default function Present({ auth }) {
         {live && <button className="btn danger" onClick={end}>Beenden</button>}
         {!live && <button className="btn mint" onClick={reopen} title="Schüler können wieder abstimmen; bisherige Antworten bleiben erhalten">↺ Wieder öffnen</button>}
       </div>
+
+      {moderating && (
+        <div className="qa-mod" onClick={(e) => { if (e.target === e.currentTarget) setModerating(false) }}>
+          <div className="card stack">
+            <div className="row spread">
+              <h2 style={{ margin: 0 }}>Fragen zur Freigabe</h2>
+              <button className="btn ghost small" onClick={() => setModerating(false)}>Schließen</button>
+            </div>
+            {!qaPending.length && <p className="muted" style={{ margin: 0 }}>Keine Fragen warten auf Freigabe.</p>}
+            {qaPending.map((r) => (
+              <div className="qa-mod-item" key={r.id}>
+                <div className="grow">{r.text}</div>
+                <button className="btn mint small" onClick={() => moderate(r, true)}>Freigeben</button>
+                <button className="btn danger small" onClick={() => moderate(r, false)}>Ablehnen</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {bigQr && live && (
         <div className="qr-overlay" onClick={() => setBigQr(false)}>
