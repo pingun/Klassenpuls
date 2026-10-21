@@ -328,3 +328,36 @@ button.logo-tile:hover { border-color: var(--brand-tint); }
 .tp-col span { margin-top: 2px; }
 .tp-foot { display: flex; justify-content: space-between; align-items: center; padding: 3px 7px; border-top: 2px solid; }
 .tp-btn { border-radius: 4px; padding: 1px 6px; font-weight: 700; }
+
+/* 4-Felder (Matrix) */
+.matrix-wrap { display: flex; gap: 32px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
+.matrix-chart { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; gap: 8px 10px; }
+.matrix-ylabel { writing-mode: vertical-rl; transform: rotate(180deg); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; color: var(--ink-soft); white-space: nowrap; }
+.matrix-plot { position: relative; height: var(--matrix-h, min(56vh, 520px)); aspect-ratio: 1; }
+.matrix-cells { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; }
+.matrix-cells div { background: var(--muted-bg); border-radius: 6px; }
+.matrix-point {
+  position: absolute; transform: translate(-50%, 50%); width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 700; font-size: .95rem; border: 2px solid var(--card);
+  box-shadow: 0 1px 4px rgba(0,0,0,.25); transition: left .6s cubic-bezier(.2,.8,.2,1), bottom .6s cubic-bezier(.2,.8,.2,1);
+}
+.matrix-xlabel { grid-column: 2; text-align: center; font-size: 1.15rem; color: var(--ink-soft); }
+.matrix-legend { list-style: none; margin: 0; padding: 0; min-width: 220px; max-width: 360px; display: flex; flex-direction: column; }
+.matrix-legend li { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-weight: 600; }
+.matrix-legend li.none { opacity: .55; }
+.matrix-dot { width: 28px; height: 28px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: .82rem; font-weight: 700; color: #fff; }
+.type-preview-slide { --matrix-h: 280px; }
+.type-preview-slide .matrix-legend li { padding: 4px 0; }
+
+/* 4-Felder: Eingabe der Schüler */
+.matrix-item { border: 2px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.matrix-item.skipped { opacity: .55; }
+.matrix-slider.untouched input[type=range] { opacity: .45; }
+.matrix-slider .row.spread { margin-bottom: 2px; }
+
+/* 4-Felder: Farbauswahl im Editor */
+.color-dot { position: relative; width: 34px; height: 34px; flex: none; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: .85rem; cursor: pointer; box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--line); }
+.color-dot input[type=color] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: 0; padding: 0; }
+.q-card.t-matrix { border-left-color: var(--s4); }
+.matrix-name { min-width: 0; overflow-wrap: break-word; hyphens: auto; }
+.btn.small.matrix-skip { flex: none; padding: 4px 10px; font-size: .8rem; }

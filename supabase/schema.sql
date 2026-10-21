@@ -496,3 +496,11 @@ $$;
 revoke all on function public.school_theme() from public;
 grant execute on function public.school_theme() to anon, authenticated;
 -- get_live_state: 'theme' = coalesce(polls.theme, profiles.theme, school_theme()) (Migration "pollbox_school_theme")
+
+-- ============ Fragetyp "4-Felder" (matrix) ============
+-- options = Items, settings = { xLabel, yLabel, colors: [Hex je Item] }
+-- Antwort: { values: [ [x, y] | null je Item ] } mit ganzen Zahlen 1–10; null = übersprungen; mindestens ein Item bewertet
+alter table public.questions drop constraint questions_type_check;
+alter table public.questions add constraint questions_type_check
+  check (type in ('multiple_choice','ranking','scale','open','pin','matrix'));
+-- submit_response: zusätzlicher Zweig für 'matrix' (vollständige Fassung: Migration "pollbox_matrix_question")

@@ -127,7 +127,7 @@ const VAR_NAMES = {
 }
 
 // lesbare Schriftfarbe (dunkel oder weiß) auf einer Hintergrundfarbe
-function inkOn(hex) {
+export function inkOn(hex) {
   const n = parseInt(hex.slice(1), 16)
   const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 }
   const L = 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255)

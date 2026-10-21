@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase, errorText } from '../supabase'
-import { QUESTION_TYPES, blankQuestion } from '../questionTypes'
+import { QUESTION_TYPES, blankQuestion, MATRIX_COLORS } from '../questionTypes'
+import { inkOn } from '../themes'
 import StartButton from '../components/StartButton'
 import TypePreview from '../components/TypePreview'
 import PinImageSettings from '../components/PinImageSettings'
@@ -66,6 +67,10 @@ export default function Editor({ auth }) {
       if (q.type === 'multiple_choice' && opts.length < 2) return `Frage ${i + 1}: Mindestens zwei Antwortmöglichkeiten.`
       if (q.type === 'ranking' && opts.length < 2) return `Frage ${i + 1}: Mindestens zwei Punkte zum Sortieren.`
       if (q.type === 'pin' && !q.settings?.image_url) return `Frage ${i + 1}: Bitte ein Bild hochladen.`
+      if (q.type === 'matrix') {
+        if (!q.settings?.xLabel?.trim() || !q.settings?.yLabel?.trim()) return `Frage ${i + 1}: Bitte beide Achsen benennen.`
+        if (opts.length < 1) return `Frage ${i + 1}: Mindestens ein Item.`
+      }
       if (q.type === 'scale') {
         if (opts.length < 1) return `Frage ${i + 1}: Mindestens eine Aussage.`
         const { min, max } = q.settings
@@ -94,6 +99,12 @@ export default function Editor({ auth }) {
           options: q.type === 'open' ? [] : q.options.map((o) => o.trim()).filter(Boolean),
           settings: q.type === 'scale' ? { ...q.settings, min: +q.settings.min, max: +q.settings.max } : q.settings,
         }
+        if (q.type === 'matrix') {
+          // leere Items entfernen – ihre Farben gleich mit
+          const keep = q.options.map((o, k) => [o.trim(), q.settings.colors?.[k] || MATRIX_COLORS[k % MATRIX_COLORS.length]]).filter(([o]) => o)
+          row.options = keep.map(([o]) => o)
+          row.settings = { ...q.settings, xLabel: q.settings.xLabel.trim(), yLabel: q.settings.yLabel.trim(), colors: keep.map(([, c]) => c) }
+        }
         if (q.id) row.id = q.id
         return row
       })
@@ -113,7 +124,7 @@ export default function Editor({ auth }) {
       let k = 0
       setQuestions(questions.map((q, i) => {
         const r = rows[i]
-        const base = { ...q, prompt: r.prompt, options: q.type === 'open' ? [] : r.options }
+        const base = { ...q, prompt: r.prompt, options: q.type === 'open' ? [] : r.options, settings: r.settings }
         return q.id ? base : { ...base, id: inserted[k++].id }
       }))
       setRemoved([]); setDirty(false)
@@ -214,6 +225,8 @@ function QuestionEditor({ q, index, total, onChange, onMove, onRemove }) {
         </div>
       )}
 
+      {q.type === 'matrix' && <MatrixEditor q={q} onChange={onChange} />}
+
       {q.type === 'multiple_choice' && (
         <label className="row small" style={{ fontWeight: 700 }}>
           <input type="checkbox" checked={!!q.settings.multiple} onChange={(e) => setSetting('multiple', e.target.checked)} /> Mehrfachauswahl erlauben
@@ -295,5 +308,42 @@ function TypePicker({ onPick }) {
         </div>
       )}
     </>
+  )
+}
+
+// 4-Felder: Achsenbezeichnungen und beliebig viele Items mit eigener Farbe
+function MatrixEditor({ q, onChange }) {
+  const colors = q.options.map((_, i) => q.settings.colors?.[i] || MATRIX_COLORS[i % MATRIX_COLORS.length])
+  const set = (patch) => onChange({ settings: { ...q.settings, ...patch } })
+  const setItem = (i, text) => onChange({ options: q.options.map((o, j) => (j === i ? text : o)) })
+  const setColor = (i, c) => set({ colors: colors.map((x, j) => (j === i ? c : x)) })
+  const remove = (i) => onChange({ options: q.options.filter((_, j) => j !== i), settings: { ...q.settings, colors: colors.filter((_, j) => j !== i) } })
+  const add = () => {
+    const next = MATRIX_COLORS.find((c) => !colors.includes(c)) || MATRIX_COLORS[q.options.length % MATRIX_COLORS.length]
+    onChange({ options: [...q.options, ''], settings: { ...q.settings, colors: [...colors, next] } })
+  }
+  return (
+    <div className="stack" style={{ marginTop: 10 }}>
+      <div className="row" style={{ alignItems: 'flex-end' }}>
+        <label className="field grow" style={{ minWidth: 180 }}><span>x-Achse (waagerecht →)</span>
+          <input type="text" value={q.settings.xLabel || ''} placeholder="z. B. Aufwand" onChange={(e) => set({ xLabel: e.target.value })} />
+        </label>
+        <label className="field grow" style={{ minWidth: 180 }}><span>y-Achse (senkrecht ↑)</span>
+          <input type="text" value={q.settings.yLabel || ''} placeholder="z. B. Wirkung" onChange={(e) => set({ yLabel: e.target.value })} />
+        </label>
+      </div>
+      <span className="small" style={{ fontWeight: 700 }}>Items (Farbpunkt anklicken, um die Farbe zu ändern)</span>
+      {q.options.map((o, i) => (
+        <div className="row" key={i}>
+          <label className="color-dot" style={{ background: colors[i], color: inkOn(colors[i]) }} title="Farbe wählen">
+            <span>{i + 1}</span>
+            <input type="color" value={colors[i]} onChange={(e) => setColor(i, e.target.value)} aria-label={`Farbe von Item ${i + 1}`} />
+          </label>
+          <input type="text" className="grow" style={{ width: 'auto' }} value={o} placeholder={`Item ${i + 1}`} onChange={(e) => setItem(i, e.target.value)} />
+          <button className="btn ghost icon small" onClick={() => remove(i)} disabled={q.options.length <= 1} title="entfernen">✕</button>
+        </div>
+      ))}
+      <button className="btn ghost small" style={{ width: 'fit-content' }} onClick={add}>＋ Item hinzufügen</button>
+    </div>
   )
 }

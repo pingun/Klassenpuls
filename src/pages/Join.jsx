@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase, participantId, errorText, getParticipantName, setParticipantName } from '../supabase'
 import NameField from '../components/NameField'
 import CornerLogo, { useLogoUrl } from '../components/CornerLogo'
-import { useTheme } from '../themes'
+import { useTheme, inkOn } from '../themes'
 import { pastel } from '../components/Results'
 import Logo from '../components/Logo'
 import CroppedImage from '../components/CroppedImage'
@@ -108,11 +108,14 @@ function QuestionForm({ q, code, initial, onDone }) {
       : q.type === 'ranking' ? answer.order.length === q.options.length
         : q.type === 'open' ? answer.text.trim().length > 0
           : q.type === 'pin' ? answer.x != null
-            : true
+            : q.type === 'matrix' ? answer.values.some(Array.isArray)
+              : true
 
   async function send() {
     setBusy(true); setErr('')
-    const { error } = await supabase.rpc('submit_response', { p_code: code, p_question_id: q.id, p_participant: participantId(), p_answer: answer, p_name: getParticipantName() || null })
+    // 4-Felder: übersprungene und nicht bewegte Items werden als null gesendet
+    const payload = q.type === 'matrix' ? { values: answer.values.map((v) => (Array.isArray(v) ? v : null)) } : answer
+    const { error } = await supabase.rpc('submit_response', { p_code: code, p_question_id: q.id, p_participant: participantId(), p_answer: payload, p_name: getParticipantName() || null })
     setBusy(false)
     if (error) return setErr(errorText(error))
     onDone(answer)
@@ -125,6 +128,7 @@ function QuestionForm({ q, code, initial, onDone }) {
       {q.type === 'ranking' && <RankingInput q={q} value={answer} onChange={setAnswer} />}
       {q.type === 'scale' && <ScaleInput q={q} value={answer} onChange={setAnswer} />}
       {q.type === 'pin' && <PinInput q={q} value={answer} onChange={setAnswer} />}
+      {q.type === 'matrix' && <MatrixInput q={q} value={answer} onChange={setAnswer} />}
       {q.type === 'open' && (
         <div>
           <textarea maxLength={200} autoFocus placeholder={q.settings?.display === 'cloud' ? 'Ein oder wenige Wörter …' : 'Deine Antwort …'} value={answer.text} onChange={(e) => setAnswer({ text: e.target.value })} />
@@ -141,6 +145,7 @@ function initialAnswer(q) {
   if (q.type === 'multiple_choice') return { choices: [] }
   if (q.type === 'ranking') return { order: [] }
   if (q.type === 'pin') return { x: null, y: null }
+  if (q.type === 'matrix') return { values: q.options.map(() => null) }
   if (q.type === 'scale') {
     const min = +(q.settings?.min ?? 1), max = +(q.settings?.max ?? 5)
     return { values: q.options.map(() => Math.round((min + max) / 2)) }
@@ -265,6 +270,57 @@ function NameBar() {
       {name
         ? <>Du nimmst teil als <b>{name}</b> · <button onClick={() => { setDraft(name); setEditing(true) }}>ändern</button></>
         : <>Du nimmst <b>anonym</b> teil · <button onClick={() => { setDraft(''); setEditing(true) }}>Namen angeben (freiwillig)</button></>}
+    </div>
+  )
+}
+
+// 4-Felder: je Item zwei Regler (1–10) und „Überspringen“.
+// Wert je Item: null = noch nicht bewegt, 'skip' = übersprungen, [x, y] = bewertet
+function MatrixInput({ q, value, onChange }) {
+  const colors = q.settings?.colors || []
+  const vals = value.values
+  const setItem = (i, v) => onChange({ values: vals.map((x, j) => (j === i ? v : x)) })
+  const move = (i, axis, n) => {
+    const cur = Array.isArray(vals[i]) ? vals[i] : [5, 5]
+    setItem(i, axis === 0 ? [n, cur[1]] : [cur[0], n])
+  }
+  const rated = vals.filter(Array.isArray).length
+  return (
+    <div className="stack">
+      <p className="muted small" style={{ margin: 0 }}>
+        Bewerte jedes Item auf beiden Reglern von 1 bis 10. Items, die du nicht bewegst oder auslässt, zählen nicht.
+      </p>
+      {q.options.map((item, i) => {
+        const v = vals[i]
+        const skipped = v === 'skip'
+        const touched = Array.isArray(v)
+        return (
+          <div key={i} className={`matrix-item ${skipped ? 'skipped' : ''}`}>
+            <div className="row spread" style={{ flexWrap: 'nowrap' }}>
+              <div className="row" style={{ gap: 10, flexWrap: 'nowrap', minWidth: 0 }}>
+                <span className="matrix-dot" style={{ background: colors[i] || 'var(--s1)', color: colors[i] ? inkOn(colors[i]) : '#fff' }}>{i + 1}</span>
+                <b className="matrix-name">{item}</b>
+              </div>
+              <button className="btn ghost small matrix-skip" onClick={() => setItem(i, skipped ? null : 'skip')}>
+                {skipped ? 'Bewerten' : 'Auslassen'}
+              </button>
+            </div>
+            {!skipped && [q.settings?.xLabel, q.settings?.yLabel].map((label, axis) => (
+              <div key={axis} className={`matrix-slider ${touched ? '' : 'untouched'}`}>
+                <div className="row spread small"><span>{label}</span><b>{touched ? v[axis] : '–'}</b></div>
+                <div className="row" style={{ gap: 8, flexWrap: 'nowrap' }}>
+                  <span className="muted small">1</span>
+                  <input type="range" min="1" max="10" step="1" value={touched ? v[axis] : 5}
+                    onChange={(e) => move(i, axis, +e.target.value)} onClick={(e) => move(i, axis, +e.target.value)}
+                    style={{ accentColor: colors[i] || 'var(--brand)' }} aria-label={`${item}: ${label}`} />
+                  <span className="muted small">10</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      })}
+      <p className="muted small center" style={{ margin: 0 }}>{rated} von {q.options.length} Items bewertet</p>
     </div>
   )
 }
