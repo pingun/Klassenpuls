@@ -155,7 +155,7 @@ export default function Editor({ auth }) {
         </div>
       </div>
       {msg && <div className={`alert ${msg.ok ? 'ok' : ''}`}>{msg.text}</div>}
-      {poll.expires_at && <GuestSaveBar poll={poll} onSaved={(r) => setPoll((p) => ({ ...p, guest_code: r.code, expires_at: r.expires_at }))} />}
+      {poll.expires_at && <GuestSaveBar poll={poll} beforeSave={() => (dirty ? save() : true)} onSaved={(r) => setPoll((p) => ({ ...p, guest_code: r.code, expires_at: r.expires_at }))} />}
 
       <div className="card stack">
         <label className="field"><span>Überschrift der Umfrage</span>
@@ -206,10 +206,11 @@ export default function Editor({ auth }) {
 }
 
 // Gast-Abstimmung: Ablauf anzeigen und „Für 3 Tage speichern“ (8-stelliger Code zum Wiederöffnen)
-function GuestSaveBar({ poll, onSaved }) {
+function GuestSaveBar({ poll, beforeSave, onSaved }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   async function keep() {
+    if (!(await beforeSave())) return // Inhalt zuerst speichern
     setBusy(true); setErr('')
     const { data, error } = await supabase.rpc('save_guest_poll', { p_poll: poll.id })
     setBusy(false)

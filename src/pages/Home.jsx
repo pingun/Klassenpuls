@@ -1,5 +1,5 @@
 import { useTheme } from '../themes'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Logo from '../components/Logo'
 import CornerLogo, { useLogoUrl } from '../components/CornerLogo'
@@ -16,6 +16,11 @@ export default function Home({ auth }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const nav = useNavigate()
+  // Erst weiterleiten, wenn die App die (neue Gast-)Anmeldung kennt – sonst landet man beim Login
+  const [pending, setPending] = useState(null)
+  useEffect(() => {
+    if (pending && auth.session) { nav(pending.path, { state: pending.state }); setPending(null) }
+  }, [pending, auth.session, nav])
   const digits = code.replace(/\D/g, '').slice(0, guestMode ? 8 : 6)
   const loggedIn = !!auth.session
   const teacher = loggedIn && !isGuest(auth.session)
@@ -29,14 +34,14 @@ export default function Home({ auth }) {
   const create = () => run(async () => {
     const session = await ensureSession()
     const poll = await createPoll(null, session.user.id)
-    nav(`/poll/${poll.id}`, { state: { pick: true } })
+    setPending({ path: `/poll/${poll.id}`, state: { pick: true } })
   })
 
   const openSaved = () => run(async () => {
     await ensureSession()
     const { data, error } = await supabase.rpc('open_guest_poll', { p_code: digits })
     if (error) throw error
-    nav(`/poll/${data}`)
+    setPending({ path: `/poll/${data}` })
   })
 
   function submit(e) {
