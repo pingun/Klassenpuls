@@ -405,3 +405,18 @@ button.logo-tile:hover { border-color: var(--brand-tint); }
 .matrix-legend li.faded { opacity: .35; }
 .matrix-legend li.active { font-weight: 800; }
 .matrix-avg { display: block; font-size: .8rem; font-weight: 600; color: var(--ink-soft); }
+
+/* ----- Startseite (minimalistisch) und Gastmodus ----- */
+.landing { position: relative; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 24px 16px 80px; }
+.landing-brand { display: flex; align-items: center; gap: 12px; font-size: clamp(2.2rem, 7vw, 3.4rem); font-weight: 800; letter-spacing: -.02em; margin-bottom: 8px; }
+.landing-brand .brand-logo { width: 56px; height: 56px; }
+.landing-cta { font-size: 1.25rem; padding: 16px 34px; border-radius: 999px; box-shadow: var(--shadow); }
+.landing-code { display: flex; gap: 8px; width: min(480px, 100%); }
+.landing-code .code-input { flex: 1; font-size: 1.5rem !important; letter-spacing: .15em; text-indent: 0; border-radius: 999px; }
+.landing-code .btn { border-radius: 999px; flex: none; }
+.landing-foot { position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; margin: 0; }
+.captcha-host { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 100; }
+.guest-bar { border-left: 6px solid var(--accent); }
+.guest-code { font-size: 2.2rem; font-weight: 800; letter-spacing: .12em; color: var(--brand); font-variant-numeric: tabular-nums; }
+.mono { font-variant-numeric: tabular-nums; letter-spacing: .05em; }
+.landing-code .code-input::placeholder { letter-spacing: normal; font-weight: 600; font-size: 1.15rem; }

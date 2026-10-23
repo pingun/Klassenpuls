@@ -655,3 +655,6 @@ begin
     'blocked', exists (select 1 from public.qa_questions where session_id = (a.s).id and question_id = (a.q).id and participant_id = p_participant and deleted));
 end $$;
 grant execute on function public.get_qa_state(text, uuid, uuid) to anon, authenticated;
+
+-- ============ Gastmodus ============
+-- vollständige Fassung: supabase/gastmodus.sql (Migrationen "gastmodus", "gastmodus_fix_guard")

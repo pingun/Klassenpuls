@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { supabase, errorText } from '../supabase'
+import { supabase, errorText, isGuest } from '../supabase'
 import { TEMPLATES } from '../questionTypes'
 import StartButton from '../components/StartButton'
 
@@ -21,6 +21,7 @@ export async function createPoll(template, ownerId) {
 export default function Dashboard({ auth }) {
   const nav = useNavigate()
   const uid = auth.session.user.id
+  const guest = isGuest(auth.session)
   const [polls, setPolls] = useState([])
   const [sessions, setSessions] = useState([])
   const [tab, setTab] = useState('mine')
@@ -29,7 +30,7 @@ export default function Dashboard({ auth }) {
 
   const load = useCallback(async () => {
     const [p, s] = await Promise.all([
-      supabase.from('polls').select('id, title, description, is_shared, hide_logo, theme, owner_id, updated_at, questions(count)').order('updated_at', { ascending: false }),
+      supabase.from('polls').select('id, title, description, is_shared, hide_logo, theme, owner_id, updated_at, expires_at, guest_code, questions(count)').order('updated_at', { ascending: false }),
       supabase.from('sessions').select('id, label, code, status, created_at, poll_id, polls(title), responses(count)').order('created_at', { ascending: false }).limit(100),
     ])
     if (p.error || s.error) setErr(errorText(p.error || s.error))
@@ -80,10 +81,11 @@ export default function Dashboard({ auth }) {
   return (
     <div className="container stack">
       <div className="row spread">
-        <h1 style={{ margin: 0 }}>Meine Umfragen</h1>
-        <button className="btn big" onClick={() => newPoll(null)}>＋ Neue Umfrage</button>
+        <h1 style={{ margin: 0 }}>{guest ? 'Meine Abstimmungen' : 'Meine Umfragen'}</h1>
+        <button className="btn big" onClick={() => newPoll(null)}>＋ {guest ? 'Neue Abstimmung' : 'Neue Umfrage'}</button>
       </div>
       {err && <div className="alert">{err}</div>}
+      {guest && <div className="alert ok">Du nutzt Klassenpuls als Gast. Abstimmungen werden ohne Speichern nach 24 Stunden gelöscht, gespeicherte 3 Tage nach dem Speichern.</div>}
 
       <div className="card">
         <h3>Mit einer Vorlage starten</h3>
@@ -99,7 +101,7 @@ export default function Dashboard({ auth }) {
 
       <div className="tabs">
         <button className={tab === 'mine' ? 'on' : ''} onClick={() => setTab('mine')}>Eigene ({mine.length})</button>
-        <button className={tab === 'shared' ? 'on' : ''} onClick={() => setTab('shared')}>Von Kollegen geteilt ({shared.length})</button>
+        {!guest && <button className={tab === 'shared' ? 'on' : ''} onClick={() => setTab('shared')}>Von Kollegen geteilt ({shared.length})</button>}
         <button className={tab === 'runs' ? 'on' : ''} onClick={() => setTab('runs')}>Durchläufe &amp; Ergebnisse ({sessions.length})</button>
       </div>
 
@@ -139,6 +141,7 @@ export default function Dashboard({ auth }) {
                   {p.hide_logo && tab === 'mine' && <span className="pill ended" title="Bei dieser Umfrage wird kein Logo angezeigt">ohne Logo</span>}
                 </div>
                 <div className="muted small">{p.questions?.[0]?.count ?? 0} Fragen{p.description ? ` · ${p.description}` : ''}</div>
+                {p.expires_at && <ExpiryNote poll={p} />}
               </div>
               <div className="row">
                 <StartButton pollId={p.id} disabled={!p.questions?.[0]?.count} />
@@ -150,6 +153,18 @@ export default function Dashboard({ auth }) {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// Gast-Abstimmung: wann sie gelöscht wird und mit welchem Code sie sich öffnen lässt
+export function ExpiryNote({ poll }) {
+  const until = new Date(poll.expires_at).toLocaleString('de-DE', { weekday: 'short', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return (
+    <div className="small" style={{ marginTop: 4 }}>
+      {poll.guest_code
+        ? <>Gespeichert bis {until} · Code <b className="mono">{poll.guest_code.replace(/(\d{4})(\d{4})/, '$1 $2')}</b></>
+        : <span className="muted">Nicht gespeichert – wird am {until} gelöscht</span>}
     </div>
   )
 }

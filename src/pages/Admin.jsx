@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { supabase, errorText, invokeFunction, appBaseUrl } from '../supabase'
+import { supabase, errorText, invokeFunction, appBaseUrl, guestModeEnabled } from '../supabase'
 import LogoAdmin from '../components/LogoAdmin'
 import ThemePreview from '../components/ThemePreview'
 import { THEMES, DEFAULT_THEME, useSchoolTheme, notifySchoolThemeChanged } from '../themes'
@@ -125,6 +125,7 @@ export default function Admin({ auth }) {
         </div>
       </div>
 
+      <GuestModeAdmin />
       <SchoolThemeAdmin />
 
       <LogoAdmin />
@@ -223,6 +224,36 @@ function CredentialsCard({ c, onClose }) {
         <a className="btn sky" href={mailto}>✉ Per E-Mail senden</a>
         <a className="btn sky" href={teams} target="_blank" rel="noreferrer">In Teams öffnen</a>
       </div>
+    </div>
+  )
+}
+
+// Admin: Gastmodus – Abstimmungen ohne Konto direkt von der Startseite
+function GuestModeAdmin() {
+  const [on, setOn] = useState(null)
+  const [msg, setMsg] = useState(null)
+  useEffect(() => { guestModeEnabled(true).then(setOn) }, [])
+  async function toggle(value) {
+    setMsg(null)
+    const { error } = await supabase.from('app_settings').upsert({ key: 'guest_mode', value: { enabled: value }, updated_at: new Date().toISOString() })
+    if (error) return setMsg({ ok: false, text: errorText(error) })
+    setOn(await guestModeEnabled(true))
+    setMsg({ ok: true, text: value ? 'Gastmodus eingeschaltet ✓' : 'Gastmodus ausgeschaltet ✓' })
+  }
+  return (
+    <div className="card stack">
+      <h3 style={{ margin: 0 }}>Gastmodus</h3>
+      <label className="row" style={{ fontWeight: 700 }}>
+        <input type="checkbox" checked={!!on} disabled={on === null} onChange={(e) => toggle(e.target.checked)} />
+        Abstimmungen ohne Konto erlauben
+      </label>
+      <p className="muted small" style={{ margin: 0 }}>
+        Jeder kann dann auf der Startseite mit einem Klick eine Abstimmung erstellen – ohne Registrierung.
+        Gast-Abstimmungen werden ohne Speichern nach 24 Stunden gelöscht, gespeicherte 3 Tage nach dem Speichern.
+        Gäste sehen keine geteilten Umfragen und können keine eigenen Bilder hochladen.
+        Voraussetzung: In Supabase ist „Allow anonymous sign-ins“ eingeschaltet (siehe README).
+      </p>
+      {msg && <div className={`alert ${msg.ok ? 'ok' : ''}`}>{msg.text}</div>}
     </div>
   )
 }

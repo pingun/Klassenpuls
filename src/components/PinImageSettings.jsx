@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { supabase, errorText } from '../supabase'
+import { supabase, errorText, useIsGuest } from '../supabase'
 import { uploadImage, ACCEPT, FULL } from '../images'
 import CroppedImage from './CroppedImage'
 
@@ -11,6 +11,7 @@ export default function PinImageSettings({ settings, onChange }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const set = (patch) => onChange({ ...settings, ...patch })
+  const guest = useIsGuest() // Gäste nutzen nur die Bildbibliothek
 
   function applyImage({ url, path = null, width, height, libraryId = null }) {
     set({ image_url: url, image_path: path, image_w: width || null, image_h: height || null, library_id: libraryId, crop: null })
@@ -31,13 +32,15 @@ export default function PinImageSettings({ settings, onChange }) {
     <div className="stack pin-settings">
       <div className="row">
         <button type="button" className="btn sky" onClick={() => setPicker(true)}>🖼 Aus Bildbibliothek wählen</button>
-        <label className="btn ghost" style={{ cursor: busy ? 'wait' : 'pointer' }}>
-          {busy ? 'Lade hoch …' : '⬆ Eigenes Bild hochladen'}
-          <input type="file" accept={ACCEPT} onChange={upload} disabled={busy} style={{ display: 'none' }} />
-        </label>
+        {!guest && (
+          <label className="btn ghost" style={{ cursor: busy ? 'wait' : 'pointer' }}>
+            {busy ? 'Lade hoch …' : '⬆ Eigenes Bild hochladen'}
+            <input type="file" accept={ACCEPT} onChange={upload} disabled={busy} style={{ display: 'none' }} />
+          </label>
+        )}
       </div>
       {err && <div className="alert">{err}</div>}
-      {!settings.image_url && <span className="muted small">Wähle ein Bild aus der Bibliothek oder lade ein eigenes hoch (z. B. Karte, Diagramm, Abbildung). Große Fotos werden automatisch verkleinert.</span>}
+      {!settings.image_url && <span className="muted small">{guest ? 'Wähle ein Bild aus der Bibliothek (z. B. Karte, Diagramm, Abbildung). Eigene Bilder hochladen können nur angemeldete Lehrer.' : 'Wähle ein Bild aus der Bibliothek oder lade ein eigenes hoch (z. B. Karte, Diagramm, Abbildung). Große Fotos werden automatisch verkleinert.'}</span>}
 
       {settings.image_url && (
         <div className="pin-config">
