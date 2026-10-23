@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { supabase, errorText } from '../supabase'
+import { useParams, Link, useLocation } from 'react-router-dom'
+import { supabase, errorText, isGuest } from '../supabase'
+import { ExpiryNote } from './Dashboard'
 import { QUESTION_TYPES, blankQuestion, MATRIX_COLORS } from '../questionTypes'
 import { inkOn } from '../themes'
 import StartButton from '../components/StartButton'
@@ -20,7 +21,10 @@ export default function Editor({ auth }) {
   const [dirty, setDirty] = useState(false)
   const [msg, setMsg] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [adding, setAdding] = useState(false)
+  const loc = useLocation()
+  const guest = isGuest(auth.session)
+  // neue Abstimmung von der Startseite: Fragetyp-Auswahl gleich öffnen
+  const [adding, setAdding] = useState(!!loc.state?.pick)
 
   useEffect(() => {
     (async () => {
@@ -151,6 +155,7 @@ export default function Editor({ auth }) {
         </div>
       </div>
       {msg && <div className={`alert ${msg.ok ? 'ok' : ''}`}>{msg.text}</div>}
+      {poll.expires_at && <GuestSaveBar poll={poll} onSaved={(r) => setPoll((p) => ({ ...p, guest_code: r.code, expires_at: r.expires_at }))} />}
 
       <div className="card stack">
         <label className="field"><span>Überschrift der Umfrage</span>
@@ -160,10 +165,12 @@ export default function Editor({ auth }) {
         <label className="field"><span>Beschreibung (optional, nur für dich)</span>
           <input type="text" value={poll.description || ''} onChange={(e) => setPollField('description', e.target.value)} />
         </label>
-        <label className="row" style={{ fontWeight: 700 }}>
-          <input type="checkbox" checked={poll.is_shared} onChange={(e) => setPollField('is_shared', e.target.checked)} />
-          Mit Kollegen teilen (sie können eine Kopie übernehmen oder die Umfrage selbst starten)
-        </label>
+        {!guest && (
+          <label className="row" style={{ fontWeight: 700 }}>
+            <input type="checkbox" checked={poll.is_shared} onChange={(e) => setPollField('is_shared', e.target.checked)} />
+            Mit Kollegen teilen (sie können eine Kopie übernehmen oder die Umfrage selbst starten)
+          </label>
+        )}
         <label className="row" style={{ fontWeight: 700 }}>
           <input type="checkbox" checked={!!poll.hide_logo} onChange={(e) => setPollField('hide_logo', e.target.checked)} />
           Logo bei dieser Umfrage ausblenden
@@ -194,6 +201,39 @@ export default function Editor({ auth }) {
       ) : (
         <button className="btn ghost big" style={{ justifyContent: 'center' }} onClick={() => setAdding(true)}>＋ Frage hinzufügen</button>
       )}
+    </div>
+  )
+}
+
+// Gast-Abstimmung: Ablauf anzeigen und „Für 3 Tage speichern“ (8-stelliger Code zum Wiederöffnen)
+function GuestSaveBar({ poll, onSaved }) {
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  async function keep() {
+    setBusy(true); setErr('')
+    const { data, error } = await supabase.rpc('save_guest_poll', { p_poll: poll.id })
+    setBusy(false)
+    if (error) return setErr(errorText(error))
+    onSaved(data)
+  }
+  return (
+    <div className="card guest-bar">
+      {poll.guest_code ? (
+        <div className="stack" style={{ gap: 6 }}>
+          <div>Mit diesem Code öffnest du die Abstimmung auf jedem Gerät – auf der Startseite eingeben:</div>
+          <div className="guest-code">{poll.guest_code.replace(/(\d{4})(\d{4})/, '$1 $2')}</div>
+          <ExpiryNote poll={poll} />
+        </div>
+      ) : (
+        <div className="row spread">
+          <div className="stack" style={{ gap: 2 }}>
+            <b>Abstimmung ohne Konto</b>
+            <ExpiryNote poll={poll} />
+          </div>
+          <button className="btn" onClick={keep} disabled={busy}>{busy ? '…' : 'Für 3 Tage speichern'}</button>
+        </div>
+      )}
+      {err && <div className="alert" style={{ marginTop: 8 }}>{err}</div>}
     </div>
   )
 }

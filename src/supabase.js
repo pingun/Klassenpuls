@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react'
+import { captchaToken } from './captcha'
 
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -62,6 +63,40 @@ export function useAuth() {
   return { ...state, refreshProfile, clearRecovery: () => setState((prev) => ({ ...prev, recovery: false })) }
 }
 
+// ----- Gastmodus: Abstimmungen ohne Konto (anonyme Supabase-Anmeldung) -----
+export const isGuest = (session) => !!session?.user?.is_anonymous
+
+// Ist der Gastmodus in dieser Installation eingeschaltet? (Admin-Schalter in der Verwaltung)
+let guestModePromise
+export function guestModeEnabled(refresh = false) {
+  if (!guestModePromise || refresh) {
+    guestModePromise = supabase.rpc('guest_mode_enabled').then(({ data }) => !!data, () => false)
+  }
+  return guestModePromise
+}
+export function useGuestMode() {
+  const [on, setOn] = useState(false)
+  useEffect(() => { guestModeEnabled().then(setOn) }, [])
+  return on
+}
+
+// Ist der aktuell angemeldete Nutzer ein Gast?
+export function useIsGuest() {
+  const [guest, setGuest] = useState(false)
+  useEffect(() => { supabase.auth.getSession().then(({ data }) => setGuest(isGuest(data.session))) }, [])
+  return guest
+}
+
+// Sorgt für eine Anmeldung: vorhandene Sitzung (Lehrer oder Gast) oder neue Gastsitzung
+export async function ensureSession() {
+  const { data } = await supabase.auth.getSession()
+  if (data.session) return data.session
+  const token = await captchaToken()
+  const { data: d2, error } = await supabase.auth.signInAnonymously(token ? { options: { captchaToken: token } } : undefined)
+  if (error) throw error
+  return d2.session
+}
+
 // Fehlermeldung aus einer Edge-Function-Antwort lesen
 export async function invokeFunction(name, body) {
   const { data, error } = await supabase.functions.invoke(name, { body })
@@ -94,6 +129,9 @@ export function errorText(error) {
   if (/already registered/i.test(msg)) return 'Für diese E-Mail-Adresse gibt es bereits ein Konto.'
   if (/Database error (saving|creating) new user|Domain ist nicht zugelassen/i.test(msg)) return 'Diese E-Mail-Domain ist für die Registrierung nicht freigegeben.'
   if (/Password should be at least/i.test(msg)) return 'Das Passwort muss mindestens 6 Zeichen lang sein.'
+  if (/Anonymous sign-ins are disabled/i.test(msg)) return 'Abstimmungen ohne Konto sind auf diesem Server noch nicht freigeschaltet.'
+  if (/captcha/i.test(msg)) return 'Die Sicherheitsprüfung ist fehlgeschlagen. Bitte lade die Seite neu und versuche es noch einmal.'
+  if (/rate limit|too many requests/i.test(msg)) return 'Zu viele Versuche in kurzer Zeit. Bitte versuche es später noch einmal.'
   return msg
 }
 

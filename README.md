@@ -45,6 +45,33 @@ Lehrer, die ein Admin von Hand angelegt hat.
 
 Wer sich per Microsoft anmeldet, muss kein vorläufiges Passwort mehr ändern.
 
+## Gastmodus: Abstimmungen ohne Konto (optional)
+
+Ist der Gastmodus an, zeigt die Startseite den Button **„Abstimmung erstellen“**: Jeder kann mit einem Klick
+eine Abstimmung anlegen und live starten – ohne Registrierung, mit allen Fragetypen.
+
+- **Ablauf:** Ohne Speichern wird eine Gast-Abstimmung samt Ergebnissen nach **24 Stunden** gelöscht.
+  „Für 3 Tage speichern“ vergibt einen **8-stelligen Code**; damit lässt sie sich auf jedem Gerät öffnen
+  (auf der Startseite eingeben: 6 Ziffern = mitmachen, 8 Ziffern = gespeicherte Abstimmung öffnen).
+  3 Tage nach dem Speichern wird alles gelöscht. Gibt ein angemeldeter Lehrer den Code ein, übernimmt er die
+  Abstimmung dauerhaft in sein Konto. Aufgeräumt wird alle 15 Minuten (pg_cron-Job `klassenpuls-gaeste-aufraeumen`).
+- **Schutz vor Missbrauch:** unsichtbares Captcha (Cloudflare Turnstile), höchstens 5 Abstimmungen je Gast,
+  30 Fragen je Abstimmung, je IP-Adresse höchstens 30 neue Abstimmungen, 60 Starts und 20 Code-Eingaben pro Stunde
+  (IP-Adressen werden nur als Hash gespeichert und nach einem Tag gelöscht). Gäste sehen keine geteilten Umfragen,
+  keine Lehrerdaten und können keine eigenen Bilder hochladen (nur die Bildbibliothek).
+- Datenbank: `supabase/gastmodus.sql`.
+
+**Einschalten:**
+1. Supabase → *Authentication → Sign In / Providers* → **Allow anonymous sign-ins** einschalten.
+2. Supabase → *Authentication → Attack Protection* → **Enable Captcha protection** → Anbieter *Turnstile*,
+   den **Secret Key** aus Cloudflare eintragen. Erst einschalten, wenn die App-Version mit Captcha live ist –
+   Supabase verlangt das Captcha dann auch bei der Lehrer-Anmeldung.
+3. Optional: *Authentication → Rate Limits* → „Anonymous users“ (Standard 30 pro Stunde und IP) anpassen –
+   an Schulen teilen sich oft viele Geräte eine IP-Adresse.
+4. GitHub → *Settings → Secrets and variables → Actions → Variables*: `VITE_TURNSTILE_SITE_KEY` = Site Key aus
+   Cloudflare (lokal in `.env`). Ohne diese Variable läuft die App ohne Captcha.
+5. In Klassenpuls unter **Verwaltung → Gastmodus** „Abstimmungen ohne Konto erlauben“ anhaken.
+
 ## Stile
 
 Es gibt 8 Stile (Schul-Klassik, Nordisch, Waldgrün, Graphit dunkel, Akademie-Blau, Terrakotta,
